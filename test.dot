@@ -1,8 +1,8 @@
 digraph G {
   rankdir=LR;
-  "[12]" [shape=box];
-  "[12]" -> ":~exit~:7556a088-d4e1-4512-8fa0-3e0127fdb2d5" [color=blue];
-  ":~exit~:7556a088-d4e1-4512-8fa0-3e0127fdb2d5" [shape=box];
   "a" [shape=box];
   "a" -> "[12]" [style=dashed color=red];
+  "[12]" [shape=box];
+  "[12]" -> ":~exit~:7b78d13f-e250-42e9-b0bf-c0d46456c8f4" [color=blue];
+  ":~exit~:7b78d13f-e250-42e9-b0bf-c0d46456c8f4" [shape=box];
 }

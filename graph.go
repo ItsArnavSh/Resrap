@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"math/rand"
 	"os"
 	"strconv"
 	"strings"
@@ -224,6 +225,90 @@ func (s *SyntaxGraph) Clean() {
 	}
 }
 
+// RandomWalker does the walk and prints data
 func (s *SyntaxGraph) RandomWalker(start string, no int32) {
-	//
+	rand.Seed(1000)
+	startingNode := s.nodeRef[start]
+	if startingNode == nil {
+		return
+	}
+
+	stack := []*SyntaxNode{}
+	current := startingNode
+	visited := int32(0)
+
+	for visited < no && current != nil {
+		// push next in reverse order
+		for i := len(current.next) - 1; i >= 0; i-- {
+			stack = append(stack, current.next[i])
+		}
+
+		// Print logic only if name starts with ' or [
+		if len(current.name) > 0 {
+			if current.name[0] == '\'' && current.name[len(current.name)-1] == '\'' {
+				fmt.Print(current.name[1 : len(current.name)-1])
+			} else if current.name[0] == '[' && current.name[len(current.name)-1] == ']' {
+				chars, err := parseCharClass(current.name)
+				if err == nil && len(chars) > 0 {
+					fmt.Print(string(chars[rand.Intn(len(chars))]))
+				}
+			}
+		}
+
+		visited++
+
+		// move to down or pop stack
+		if len(current.down) > 0 {
+			current = current.down[rand.Intn(len(current.down))]
+		} else if len(stack) > 0 {
+			current = stack[len(stack)-1]
+			stack = stack[:len(stack)-1]
+		} else {
+			current = nil
+		}
+	}
+	fmt.Println()
+}
+
+// parseCharClass expands a regex-like [] range into all possible runes
+// e.g. [a-zA-Z0-9_] -> abc...xyzABC...XYZ0123456789_
+func parseCharClass(charClass string) ([]rune, error) {
+	if len(charClass) < 2 || charClass[0] != '[' || charClass[len(charClass)-1] != ']' {
+		return nil, fmt.Errorf("invalid format: %s", charClass)
+	}
+
+	var chars []rune
+	runes := []rune(charClass[1 : len(charClass)-1])
+	for i := 0; i < len(runes); i++ {
+		if i+2 < len(runes) && runes[i+1] == '-' { // range like a-z
+			start, end := runes[i], runes[i+2]
+			if start > end {
+				return nil, fmt.Errorf("invalid range %c-%c", start, end)
+			}
+			for r := start; r <= end; r++ {
+				chars = append(chars, r)
+			}
+			i += 2 // skip past range
+		} else {
+			chars = append(chars, runes[i])
+		}
+	}
+	return chars, nil
+}
+
+// randomString generates a random string of given length from a char set
+func randomString(charClass string, length int) (string, error) {
+	chars, err := parseCharClass(charClass)
+	if err != nil {
+		return "", err
+	}
+	if len(chars) == 0 {
+		return "", fmt.Errorf("no characters available")
+	}
+
+	result := make([]rune, length)
+	for i := 0; i < length; i++ {
+		result[i] = chars[rand.Intn(len(chars))]
+	}
+	return string(result), nil
 }

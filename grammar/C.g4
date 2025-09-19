@@ -59,7 +59,7 @@ unaryOperator
 castExpression
     : '__extension__'? '(' typeName ')' castExpression
     | unaryExpression
-    | DigitSequence // for
+    | DigitSequence
     ;
 
 multiplicativeExpression
@@ -109,7 +109,7 @@ conditionalExpression
 assignmentExpression
     : conditionalExpression
     | unaryExpression assignmentOperator assignmentExpression
-    | DigitSequence // for
+    | DigitSequence
     ;
 
 assignmentOperator
@@ -192,7 +192,7 @@ typeSpecifier
     | structOrUnionSpecifier
     | enumSpecifier
     | typedefName
-    | '__typeof__' '(' constantExpression ')' // GCC extension
+    | '__typeof__' '(' constantExpression ')'
     ;
 
 structOrUnionSpecifier
@@ -282,9 +282,9 @@ directDeclarator
     | directDeclarator '[' typeQualifierList? '*' ']'
     | directDeclarator '(' parameterTypeList ')'
     | directDeclarator '(' identifierList? ')'
-    | Identifier ':' DigitSequence         // bit field
-    | vcSpecificModifer Identifier         // Visual C Extension
-    | '(' vcSpecificModifer declarator ')' // Visual C Extension
+    | Identifier ':' DigitSequence
+    | vcSpecificModifer Identifier
+    | '(' vcSpecificModifer declarator ')'
     ;
 
 vcSpecificModifer
@@ -315,7 +315,7 @@ gccAttribute
     ;
 
 pointer
-    : (('*' | '^') typeQualifierList?)+ // ^ - Blocks language extension
+    : (('*' | '^') typeQualifierList?)+
     ;
 
 typeQualifierList
@@ -459,7 +459,7 @@ jumpStatement
         | 'continue'
         | 'break'
         | 'return' expression?
-        | 'goto' unaryExpression // GCC extension
+        | 'goto' unaryExpression
     ) ';'
     ;
 
@@ -474,7 +474,7 @@ translationUnit
 externalDeclaration
     : functionDefinition
     | declaration
-    | ';' // stray ;
+    | ';'
     ;
 
 functionDefinition
@@ -1040,8 +1040,8 @@ fragment SCharSequence
 fragment SChar
     : ~["\\\r\n]
     | EscapeSequence
-    | '\\\n'   // Added line
-    | '\\\r\n' // Added line
+    | '\\\n'
+    | '\\\r\n'
     ;
 
 MultiLineMacro
@@ -1060,12 +1060,4 @@ Whitespace
 
 Newline
     : ('\r' '\n'? | '\n') -> channel(HIDDEN)
-    ;
-
-BlockComment
-    : '/*' .*? '*/' -> channel(HIDDEN)
-    ;
-
-LineComment
-    : '//' ~[\r\n]* -> channel(HIDDEN)
     ;
