@@ -15,14 +15,15 @@ type Scanner struct {
 type TokenType int8
 
 const (
-	word      TokenType = iota //Normal words
-	character                  //'...'
-	maybe                      //?
-	oneormore                  //+
-	anyno                      //*
-	bracks                     //(...)
-	option                     // |
-	padding                    //just to account for my bad indexing skills
+	word       TokenType = iota //Normal words
+	character                   //'...'
+	maybe                       //?
+	oneormore                   //+
+	anyno                       //*
+	bracks                      //(...)
+	option                      // |
+	padding                     //just to account for my bad indexing skills
+	regexrange                  //[...]
 
 )
 
@@ -42,6 +43,8 @@ func (t TokenType) String() string {
 		return "brackets ( ... )"
 	case option:
 		return "option (|)"
+	case regexrange:
+		return "regexrange [...]"
 	default:
 		return fmt.Sprintf("unknown(%d)", t)
 	}
@@ -71,9 +74,8 @@ func (s *Scanner) ScanLine(line string) {
 
 	content := parts[1]
 	parentNode := s.synG.GetNode(heading)
-	_ = s.contentHandler(parentNode, content)
+	_ = s.contentHandler(parentNode, content, false)
 
-	fmt.Println(heading)
 }
 
 func (s *Scanner) SeperateTokens(content string) []Token {
@@ -103,7 +105,25 @@ func (s *Scanner) SeperateTokens(content string) []Token {
 		switch {
 		case unicode.IsSpace(ch):
 			flush()
-
+		case ch == '[':
+			flush()
+			j := i + 1
+			depth := 1
+			for j < len(content) && depth > 0 {
+				if content[j] == '[' {
+					depth++
+				} else if content[j] == ']' {
+					depth--
+				}
+				j++
+			}
+			if depth == 0 {
+				tokens = append(tokens, Token{content[i:j], regexrange})
+				i = j - 1
+			} else {
+				// unmatched '('
+				tokens = append(tokens, Token{string(ch), word})
+			}
 		case ch == '(':
 			flush()
 			j := i + 1
@@ -163,70 +183,94 @@ func (s *Scanner) SeperateTokens(content string) []Token {
 
 	return tokens
 }
-func (s *Scanner) contentHandler(parentNode *SyntaxNode, content string) *SyntaxNode {
+func (s *Scanner) contentHandler(parentNode *SyntaxNode, content string, deep bool) *SyntaxNode {
 	collapseNodeName := ":~exit~:" + uuid.NewString()
 	collapseNode := s.synG.GetNode(collapseNodeName)
 	bufferToken := parentNode
-
+	bufferbufferToken := parentNode
 	tokens := s.SeperateTokens(content)
 	tokens = append(tokens, Token{"", padding})
 
 	for i, token := range tokens {
 		switch token.typ {
 		case option:
-			parentNode.AddEdgeDown(bufferToken)
-			bufferToken.AddEdgeDown(collapseNode)
-			bufferToken = parentNode
+			bufferToken.AddEdgeNext(&s.synG, collapseNode)
 		case oneormore:
-			parentNode.AddEdgeDown(bufferToken)
-			bufferToken.AddEdgeDown(collapseNode)
-			bufferToken.AddEdgeDown(bufferToken)
-			bufferToken = parentNode
+			if tokens[i-1].typ == bracks {
+				continue
+			}
+			if tokens[i+1].typ == padding {
+				bufferToken.AddEdgeDown(&s.synG, collapseNode)
+			}
+			bufferToken.AddEdgeDown(&s.synG, bufferToken)
 		case anyno:
-			parentNode.AddEdgeDown(collapseNode)
-			bufferToken.AddEdgeDown(collapseNode)
-			bufferToken.AddEdgeDown(bufferToken)
-			bufferToken = parentNode
+			if tokens[i-1].typ == bracks {
+				continue
+			}
+			if tokens[i+1].typ == padding {
+				bufferToken.AddEdgeDown(&s.synG, collapseNode)
+				bufferbufferToken.AddEdgeDown(&s.synG, collapseNode)
+			}
+			bufferbufferToken.AddEdgeDown(&s.synG, collapseNode)
+			bufferToken.AddEdgeDown(&s.synG, bufferToken)
 		case maybe:
-			parentNode.AddEdgeDown(collapseNode)
-			parentNode.AddEdgeDown(bufferToken)
-			bufferToken.AddEdgeDown(collapseNode)
-			bufferToken = parentNode
+			if tokens[i-1].typ == bracks {
+				continue
+			}
+			parentNode.AddEdgeDown(&s.synG, collapseNode)
+			bufferToken.AddEdgeDown(&s.synG, collapseNode)
 		case bracks:
-			//find last index of )
-			closeIndex := strings.LastIndex(content, ")")
-			substr := content[i+1 : closeIndex]
-			hollowNode := s.synG.GetNode(":~brac:~" + uuid.NewString()) //To replace the bracket
-			bufferToken.AddEdgeNext(hollowNode)
-			localCollapseNode := s.contentHandler(hollowNode, substr) //All nodes converge in this one for this brac
-			bufferToken = hollowNode
-			//Depending on what lies ahead modify these two nodes
-			//Refer to diagrams..which I hope I make
-			//Special case in case of brackets for the operations so will handle them right here
-			switch tokens[i+1].typ {
-			case anyno:
-				localCollapseNode.AddEdgeDown(hollowNode)
-				hollowNode.AddEdgeDown(collapseNode)
-				i++
-			case oneormore:
-				localCollapseNode.AddEdgeDown(hollowNode)
-				localCollapseNode.AddEdgeDown(collapseNode)
-				i++
-			case maybe:
-				hollowNode.AddEdgeDown(collapseNode)
-				localCollapseNode.AddEdgeDown(collapseNode)
-				i++
-			default:
+			// Extract the content inside the brackets from the token data
+			brackContent := token.data
+			if len(brackContent) < 2 || brackContent[0] != '(' || brackContent[len(brackContent)-1] != ')' {
+				// Invalid bracket token, skip it
 				continue
 			}
 
-		case word, character:
+			// Extract content between the brackets
+			substr := brackContent[1 : len(brackContent)-1]
 
+			// Skip empty brackets
+			if strings.TrimSpace(substr) == "" {
+				continue
+			}
+
+			hollowNode := s.synG.GetNode(":~brac:~" + uuid.NewString()) //To replace the bracket
+			bufferToken.AddEdgeNext(&s.synG, hollowNode)
+			localCollapseNode := s.contentHandler(hollowNode, substr, true) //All nodes converge in this one for this brac
+			bufferbufferToken = bufferToken
+			bufferToken = localCollapseNode
+
+			//Depending on what lies ahead modify these two nodes
+			//Refer to diagrams..which I hope I make
+			//Special case in case of brackets for the operations so will handle them right here
+			if i+1 < len(tokens) {
+				switch tokens[i+1].typ {
+				case anyno:
+					localCollapseNode.AddEdgeDown(&s.synG, hollowNode)
+					hollowNode.AddEdgeDown(&s.synG, localCollapseNode)
+				case oneormore:
+					localCollapseNode.AddEdgeDown(&s.synG, hollowNode)
+				case maybe:
+					hollowNode.AddEdgeDown(&s.synG, localCollapseNode)
+				default:
+					continue
+				}
+			}
+
+		case word, character, regexrange:
 			newNode := s.synG.GetNode(token.data)
-			bufferToken.AddEdgeNext(newNode)
+			if i > 0 && (tokens[i-1].typ != option) {
+				bufferToken.AddEdgeNext(&s.synG, newNode)
+			} else {
+				parentNode.AddEdgeDown(&s.synG, newNode)
+			}
+			bufferbufferToken = bufferToken
 			bufferToken = newNode
 		case padding:
-			continue
+			if bufferToken != collapseNode && (deep || !strings.Contains(bufferToken.name, "~:brac:~")) {
+				bufferToken.AddEdgeNext(&s.synG, collapseNode)
+			}
 		}
 	}
 
@@ -235,6 +279,6 @@ func (s *Scanner) contentHandler(parentNode *SyntaxNode, content string) *Syntax
 
 func NewScanner() Scanner {
 	return Scanner{
-		synG: SyntaxGraph{},
+		synG: NewSyntaxGraph(),
 	}
 }

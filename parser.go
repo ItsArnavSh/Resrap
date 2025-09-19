@@ -14,4 +14,10 @@ func parser(filename string) {
 	for _, line := range lines {
 		sc.ScanLine(line)
 	}
+	fmt.Printf("There are %d nodes \n", len(sc.synG.nodeRef))
+
+	sc.synG.Clean()
+	sc.synG.ExportDOTFile("test.dot")
+	//sc.synG.TraverseInteractive("statement")
+
 }

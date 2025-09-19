@@ -43,7 +43,7 @@ unaryExpression
         postfixExpression
         | unaryOperator castExpression
         | ('sizeof' | '_Alignof') '(' typeName ')'
-        | '&&' Identifier // GCC extension address of label
+        | '&&' Identifier
     )
     ;
 
