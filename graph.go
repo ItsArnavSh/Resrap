@@ -7,6 +7,8 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
+	"unicode"
 )
 
 type SyntaxNode struct {
@@ -225,49 +227,70 @@ func (s *SyntaxGraph) Clean() {
 	}
 }
 
-// RandomWalker does the walk and prints data
 func (s *SyntaxGraph) RandomWalker(start string, no int32) {
-	rand.Seed(1000)
-	startingNode := s.nodeRef[start]
-	if startingNode == nil {
-		return
+	rand.Seed(time.Now().UnixNano())
+
+	type frame struct {
+		node  *SyntaxNode
+		depth int32
 	}
+	stack := []frame{}
 
-	stack := []*SyntaxNode{}
-	current := startingNode
-	visited := int32(0)
+	current := s.GetNode(start)
+	depth := int32(0)
 
-	for visited < no && current != nil {
-		// push next in reverse order
-		for i := len(current.next) - 1; i >= 0; i-- {
-			stack = append(stack, current.next[i])
+	for current != nil && depth < no {
+		// Case 1: non-terminal (alphabets only)
+		if isAlpha(current.name) {
+			// Push the jump node (if exists) onto stack
+			if len(current.next) > 0 {
+				stack = append(stack, frame{current.next[0], depth})
+			}
+			// Jump to definition of this non-terminal
+			current = s.GetNode(current.name)
+			continue
 		}
 
-		// Print logic only if name starts with ' or [
-		if len(current.name) > 0 {
-			if current.name[0] == '\'' && current.name[len(current.name)-1] == '\'' {
-				fmt.Print(current.name[1 : len(current.name)-1])
-			} else if current.name[0] == '[' && current.name[len(current.name)-1] == ']' {
-				chars, err := parseCharClass(current.name)
-				if err == nil && len(chars) > 0 {
-					fmt.Print(string(chars[rand.Intn(len(chars))]))
-				}
+		// Case 2: regex char class
+		if strings.HasPrefix(current.name, "[") && strings.HasSuffix(current.name, "]") {
+			chars, err := parseCharClass(current.name)
+			if err == nil && len(chars) > 0 {
+				fmt.Print(string(chars[rand.Intn(len(chars))]))
 			}
 		}
 
-		visited++
+		// Case 3: literal
+		if strings.HasPrefix(current.name, "'") && strings.HasSuffix(current.name, "'") {
+			fmt.Print(current.name[1 : len(current.name)-1])
+		}
 
-		// move to down or pop stack
-		if len(current.down) > 0 {
-			current = current.down[rand.Intn(len(current.down))]
+		depth++
+
+		// Move along .next if possible
+		if len(current.next) > 0 {
+			choice := rand.Intn(len(current.next))
+			current = current.next[choice]
 		} else if len(stack) > 0 {
-			current = stack[len(stack)-1]
+			// Pop from stack when recursion would return
+			last := stack[len(stack)-1]
 			stack = stack[:len(stack)-1]
+			current = last.node
+			depth = last.depth
 		} else {
 			current = nil
 		}
 	}
+
 	fmt.Println()
+}
+
+func isAlpha(s string) bool {
+	for _, r := range s {
+		if !unicode.IsLetter(r) {
+			return false
+		}
+	}
+	return true
 }
 
 // parseCharClass expands a regex-like [] range into all possible runes
