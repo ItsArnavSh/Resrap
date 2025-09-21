@@ -245,8 +245,8 @@ func (s *SyntaxGraph) RandomWalker(start string, no int32) string {
 				content := current.name[4:strings.LastIndex(current.name, "'")]
 				unescaped := unescapeString(content)
 				result.WriteString(unescaped)
-			} else if current.name[0] == '[' && current.name[len(current.name)-1] == ']' {
-				chars, err := parseCharClass(current.name)
+			} else if strings.HasPrefix(current.name, "~:{[") {
+				chars, err := parseCharClass(current.name[3 : 1+strings.LastIndex(current.name, "]")])
 				if err == nil && len(chars) > 0 {
 					result.WriteString(chars[rand.Intn(len(chars))])
 				}

@@ -18,8 +18,8 @@ func parser(filename string) {
 
 	sc.synG.Clean()
 	//sc.synG.ExportDOTFile("test.dot")
-	//sc.synG.TraverseInteractive("statement")
+	//sc.synG.TraverseInteractive("functionheader")
 
-	fmt.Println(sc.synG.RandomWalker("program", 1000))
+	fmt.Println(sc.synG.RandomWalker("program", 10000000))
 
 }

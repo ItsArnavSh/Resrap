@@ -221,7 +221,6 @@ func (s *Scanner) addStatement(heading, content string, depth bool) (*SyntaxNode
 			startNode := s.synG.GetNode(generator("start"))
 			bufferNode.AddEdgeNext(&s.synG, startNode)
 			leafNode := s.synG.GetNode(generator("{" + token.data + "}"))
-			fmt.Println(leafNode.name)
 			startNode.AddEdgeNext(&s.synG, leafNode)
 			jumpNode := s.synG.GetNode(generator("jmp"))
 			leafNode.AddEdgeNext(&s.synG, jumpNode)
