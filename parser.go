@@ -17,8 +17,9 @@ func parser(filename string) {
 	fmt.Printf("There are %d nodes \n", len(sc.synG.nodeRef))
 
 	sc.synG.Clean()
-	sc.synG.ExportDOTFile("test.dot")
+	//sc.synG.ExportDOTFile("test.dot")
 	//sc.synG.TraverseInteractive("statement")
-	sc.synG.RandomWalker("a", 100)
+
+	fmt.Println(sc.synG.RandomWalker("program", 1000))
 
 }

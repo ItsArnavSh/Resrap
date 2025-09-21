@@ -188,11 +188,17 @@ func NewScanner() Scanner {
 		synG: NewSyntaxGraph(),
 	}
 }
-func (s *Scanner) addStatement(heading, content string, depth bool) {
+func (s *Scanner) addStatement(heading, content string, depth bool) (*SyntaxNode, *SyntaxNode) {
+	endNode := s.synG.GetNode("~:end:~")
+	if depth {
+
+		endNode = s.synG.GetNode(generator("end")) //One endnode per block
+	}
 	parentNode := s.synG.GetNode(heading)
 	//Converting the content here to a block
 	// Every block is a self containted block with references to other headers and directional nodes for | + * etc
 	tokens := s.SeperateTokens(content)
+	tokens = append(tokens, Token{"", padding})
 	bufferNode := parentNode
 	var startBuffer *SyntaxNode //Stores the starts
 	for _, token := range tokens {
@@ -201,7 +207,7 @@ func (s *Scanner) addStatement(heading, content string, depth bool) {
 			//Just leave it as is, we will assume its definition exists, here we will simply need to generate an exit case
 			startNode := s.synG.GetNode(generator("start"))
 			bufferNode.AddEdgeNext(&s.synG, startNode)
-			wordNode := s.synG.GetNode(token.data)
+			wordNode := s.synG.GetNode(generator("{" + token.data + "}"))
 			startNode.AddEdgeNext(&s.synG, wordNode)
 			jumpNode := s.synG.GetNode(generator("jmp"))
 			wordNode.AddEdgeNext(&s.synG, jumpNode)
@@ -214,14 +220,14 @@ func (s *Scanner) addStatement(heading, content string, depth bool) {
 			//True leaf nodes just add simply to next and update bufferNode
 			startNode := s.synG.GetNode(generator("start"))
 			bufferNode.AddEdgeNext(&s.synG, startNode)
-			leafNode := s.synG.GetNode(token.data)
+			leafNode := s.synG.GetNode(generator("{" + token.data + "}"))
+			fmt.Println(leafNode.name)
 			startNode.AddEdgeNext(&s.synG, leafNode)
 			jumpNode := s.synG.GetNode(generator("jmp"))
 			leafNode.AddEdgeNext(&s.synG, jumpNode)
 			startBuffer = startNode
 			bufferNode = jumpNode
 		case maybe:
-			fmt.Println(startBuffer.name, "  ", bufferNode.name)
 			startBuffer.AddEdgeNext(&s.synG, bufferNode) //An option to skip to the end
 		case oneormore:
 			bufferNode.AddEdgeNext(&s.synG, startBuffer) //An option to go to the start
@@ -230,12 +236,19 @@ func (s *Scanner) addStatement(heading, content string, depth bool) {
 			bufferNode.AddEdgeNext(&s.synG, startBuffer)
 		case option:
 			//in Case of an option, no need to really do anything, just set the buffer settings back to the parent
+			bufferNode.AddEdgeNext(&s.synG, endNode)
 			bufferNode = parentNode
 			startBuffer = nil
+		case padding:
+			bufferNode.AddEdgeNext(&s.synG, endNode)
+		case bracks:
+			//Get the final bracket
+			startBuffer, bufferNode = s.addStatement(bufferNode.name, token.data[1:len(token.data)-1], true)
+
 		}
 
 	}
-
+	return parentNode, endNode
 }
 func generator(typ string) string {
 	return "~:" + typ + ":~" + uuid.NewString()

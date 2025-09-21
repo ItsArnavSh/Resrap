@@ -7,8 +7,8 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"time"
-	"unicode"
+
+	"github.com/golang-collections/collections/stack"
 )
 
 type SyntaxNode struct {
@@ -227,81 +227,124 @@ func (s *SyntaxGraph) Clean() {
 	}
 }
 
-func (s *SyntaxGraph) RandomWalker(start string, no int32) {
-	rand.Seed(time.Now().UnixNano())
-
-	type frame struct {
-		node  *SyntaxNode
-		depth int32
+// RandomWalker does the walk and returns the generated string
+func (s *SyntaxGraph) RandomWalker(start string, no int32) string {
+	var result strings.Builder
+	jumpStack := stack.New()
+	startingNode := s.nodeRef[start]
+	if startingNode == nil {
+		return ""
 	}
-	stack := []frame{}
-
-	current := s.GetNode(start)
-	depth := int32(0)
-
-	for current != nil && depth < no {
-		// Case 1: non-terminal (alphabets only)
-		if isAlpha(current.name) {
-			// Push the jump node (if exists) onto stack
-			if len(current.next) > 0 {
-				stack = append(stack, frame{current.next[0], depth})
+	current := startingNode
+	visited := int32(0)
+	for visited < no && current != nil {
+		// Process logic only if name starts with ' or [
+		if len(current.name) > 0 {
+			if strings.HasPrefix(current.name, "~:{'") {
+				// Extract content between quotes and handle escape sequences
+				content := current.name[4:strings.LastIndex(current.name, "'")]
+				unescaped := unescapeString(content)
+				result.WriteString(unescaped)
+			} else if current.name[0] == '[' && current.name[len(current.name)-1] == ']' {
+				chars, err := parseCharClass(current.name)
+				if err == nil && len(chars) > 0 {
+					result.WriteString(chars[rand.Intn(len(chars))])
+				}
+			} else if strings.HasPrefix(current.name, "~:{") {
+				name := current.name[3:strings.Index(current.name, "}")]
+				jumpStack.Push(current.next[0].name)
+				current = s.GetNode(name)
+				continue // Skip the normal next node selection
+			} else if current.name == "~:end:~" {
+				nameInt := jumpStack.Pop()
+				name, ok := nameInt.(string)
+				if !ok {
+					break
+				}
+				current = s.GetNode(name)
+				continue // Skip the normal next node selection
 			}
-			// Jump to definition of this non-terminal
-			current = s.GetNode(current.name)
-			continue
 		}
-
-		// Case 2: regex char class
-		if strings.HasPrefix(current.name, "[") && strings.HasSuffix(current.name, "]") {
-			chars, err := parseCharClass(current.name)
-			if err == nil && len(chars) > 0 {
-				fmt.Print(string(chars[rand.Intn(len(chars))]))
-			}
-		}
-
-		// Case 3: literal
-		if strings.HasPrefix(current.name, "'") && strings.HasSuffix(current.name, "'") {
-			fmt.Print(current.name[1 : len(current.name)-1])
-		}
-
-		depth++
-
-		// Move along .next if possible
+		visited++
+		// move to next (randomly selected if multiple options)
 		if len(current.next) > 0 {
-			choice := rand.Intn(len(current.next))
-			current = current.next[choice]
-		} else if len(stack) > 0 {
-			// Pop from stack when recursion would return
-			last := stack[len(stack)-1]
-			stack = stack[:len(stack)-1]
-			current = last.node
-			depth = last.depth
+			current = current.next[rand.Intn(len(current.next))]
 		} else {
 			current = nil
 		}
 	}
-
-	fmt.Println()
+	return result.String()
 }
 
-func isAlpha(s string) bool {
-	for _, r := range s {
-		if !unicode.IsLetter(r) {
-			return false
+// Helper function to handle escape sequences
+func unescapeString(s string) string {
+	result := make([]byte, 0, len(s))
+	for i := 0; i < len(s); i++ {
+		if s[i] == '\\' && i+1 < len(s) {
+			switch s[i+1] {
+			case 'n':
+				result = append(result, '\n')
+				i++ // skip the next character
+			case 't':
+				result = append(result, '\t')
+				i++
+			case 'r':
+				result = append(result, '\r')
+				i++
+			case '\\':
+				result = append(result, '\\')
+				i++
+			case '\'':
+				result = append(result, '\'')
+				i++
+			case '"':
+				result = append(result, '"')
+				i++
+			default:
+				// If it's not a recognized escape sequence, keep both characters
+				result = append(result, s[i])
+			}
+		} else {
+			result = append(result, s[i])
 		}
 	}
-	return true
+	return string(result)
 }
 
-// parseCharClass expands a regex-like [] range into all possible runes
-// e.g. [a-zA-Z0-9_] -> abc...xyzABC...XYZ0123456789_
-func parseCharClass(charClass string) ([]rune, error) {
+// Predefined word list for alphanumeric patterns
+var wordList = []string{
+	"hello", "world", "test", "code", "function", "variable", "class", "method",
+	"data", "user", "admin", "login", "password", "email", "server", "client",
+	"database", "table", "query", "result", "error", "success", "failure", "debug",
+}
+
+// parseCharClass expands a regex-like [] range into all possible strings
+// e.g. [a-zA-Z0-9*] -> abc...xyzABC...XYZ0123456789*
+// Special handling for common patterns:
+// - Digits: returns random numbers as strings
+// - Alphanumeric: returns words from predefined list as strings
+func parseCharClass(charClass string) ([]string, error) {
 	if len(charClass) < 2 || charClass[0] != '[' || charClass[len(charClass)-1] != ']' {
 		return nil, fmt.Errorf("invalid format: %s", charClass)
 	}
 
-	var chars []rune
-	runes := []rune(charClass[1 : len(charClass)-1])
+	content := charClass[1 : len(charClass)-1]
+
+	// Check for common regex patterns
+	switch content {
+	case "0-9", "\\d":
+		// Return random numbers as strings
+		numbers := []string{"42", "123", "7", "999", "256", "1024", "88", "13", "77", "101"}
+		return numbers, nil
+
+	case "a-zA-Z0-9", "\\w", "a-zA-Z", "A-Z", "a-z":
+		// Return random word from predefined list as strings
+		return wordList, nil
+	}
+
+	// Fall back to original character range expansion
+	var chars []string
+	runes := []rune(content)
 	for i := 0; i < len(runes); i++ {
 		if i+2 < len(runes) && runes[i+1] == '-' { // range like a-z
 			start, end := runes[i], runes[i+2]
@@ -309,29 +352,12 @@ func parseCharClass(charClass string) ([]rune, error) {
 				return nil, fmt.Errorf("invalid range %c-%c", start, end)
 			}
 			for r := start; r <= end; r++ {
-				chars = append(chars, r)
+				chars = append(chars, string(r))
 			}
 			i += 2 // skip past range
 		} else {
-			chars = append(chars, runes[i])
+			chars = append(chars, string(runes[i]))
 		}
 	}
 	return chars, nil
-}
-
-// randomString generates a random string of given length from a char set
-func randomString(charClass string, length int) (string, error) {
-	chars, err := parseCharClass(charClass)
-	if err != nil {
-		return "", err
-	}
-	if len(chars) == 0 {
-		return "", fmt.Errorf("no characters available")
-	}
-
-	result := make([]rune, length)
-	for i := 0; i < length; i++ {
-		result[i] = chars[rand.Intn(len(chars))]
-	}
-	return string(result), nil
 }
