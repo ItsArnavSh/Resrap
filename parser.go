@@ -18,7 +18,7 @@ func parser(filename string) {
 
 	//sc.synG.ExportDOTFile("test.dot")
 	//sc.synG.TraverseInteractive("functionheader")
-
-	fmt.Println(sc.synG.RandomWalker("program", 10000000))
+	prng := newPRNG(100)
+	fmt.Println(sc.synG.RandomWalker(&prng, "program", 10000000))
 
 }

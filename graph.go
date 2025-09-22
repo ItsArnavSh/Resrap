@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"math/rand"
 	"strings"
 
 	"github.com/golang-collections/collections/stack"
@@ -36,12 +35,11 @@ func (s *SyntaxGraph) GetNode(name string) *SyntaxNode {
 func NewSyntaxGraph() SyntaxGraph {
 	return SyntaxGraph{
 		nodeRef: make(map[string]*SyntaxNode),
-		prng:    newPRNG(0),
 	}
 }
 
 // RandomWalker does the walk and returns the generated string
-func (s *SyntaxGraph) RandomWalker(start string, no int32) string {
+func (s *SyntaxGraph) RandomWalker(prng *PRNG, start string, no int32) string {
 	var result strings.Builder
 	jumpStack := stack.New()
 	startingNode := s.nodeRef[start]
@@ -59,9 +57,9 @@ func (s *SyntaxGraph) RandomWalker(start string, no int32) string {
 				unescaped := unescapeString(content)
 				result.WriteString(unescaped)
 			} else if strings.HasPrefix(current.name, "~:{[") {
-				chars, err := parseCharClass(current.name[3 : 1+strings.LastIndex(current.name, "]")])
+				chars, err := parseCharClass(prng, current.name[3:1+strings.LastIndex(current.name, "]")])
 				if err == nil && len(chars) > 0 {
-					result.WriteString(chars[rand.Intn(len(chars))])
+					result.WriteString(chars[prng.RandomInt(0, len(chars))])
 				}
 			} else if strings.HasPrefix(current.name, "~:{") {
 				name := current.name[3:strings.Index(current.name, "}")]
@@ -81,7 +79,7 @@ func (s *SyntaxGraph) RandomWalker(start string, no int32) string {
 		visited++
 		// move to next (randomly selected if multiple options)
 		if len(current.next) > 0 {
-			current = current.next[rand.Intn(len(current.next))]
+			current = current.next[prng.RandomInt(0, len(current.next))]
 		} else {
 			current = nil
 		}
@@ -131,12 +129,7 @@ var wordList = []string{
 	"database", "table", "query", "result", "error", "success", "failure", "debug",
 }
 
-// parseCharClass expands a regex-like [] range into all possible strings
-// e.g. [a-zA-Z0-9*] -> abc...xyzABC...XYZ0123456789*
-// Special handling for common patterns:
-// - Digits: returns random numbers as strings
-// - Alphanumeric: returns words from predefined list as strings
-func parseCharClass(charClass string) ([]string, error) {
+func parseCharClass(prng *PRNG, charClass string) ([]string, error) {
 	if len(charClass) < 2 || charClass[0] != '[' || charClass[len(charClass)-1] != ']' {
 		return nil, fmt.Errorf("invalid format: %s", charClass)
 	}
@@ -146,13 +139,15 @@ func parseCharClass(charClass string) ([]string, error) {
 	// Check for common regex patterns
 	switch content {
 	case "0-9", "\\d":
-		// Return random numbers as strings
+		// Random number string
 		numbers := []string{"42", "123", "7", "999", "256", "1024", "88", "13", "77", "101"}
-		return numbers, nil
+		idx := prng.RandomInt(0, len(numbers))
+		return []string{numbers[idx]}, nil
 
 	case "a-zA-Z0-9", "\\w", "a-zA-Z", "A-Z", "a-z":
-		// Return random word from predefined list as strings
-		return wordList, nil
+		// Random word from predefined list
+		idx := prng.RandomInt(0, len(wordList))
+		return []string{wordList[idx]}, nil
 	}
 
 	// Fall back to original character range expansion
@@ -172,5 +167,11 @@ func parseCharClass(charClass string) ([]string, error) {
 			chars = append(chars, string(runes[i]))
 		}
 	}
-	return chars, nil
+
+	// Pick one random char from expanded set
+	if len(chars) == 0 {
+		return nil, fmt.Errorf("empty char class: %s", charClass)
+	}
+	idx := prng.RandomInt(0, len(chars))
+	return []string{chars[idx]}, nil
 }
