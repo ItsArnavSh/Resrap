@@ -205,26 +205,23 @@ func (s *Scanner) addStatement(heading, content string, depth bool) (*SyntaxNode
 		switch token.typ {
 		case word:
 			//Just leave it as is, we will assume its definition exists, here we will simply need to generate an exit case
-			startNode := s.synG.GetNode(generator("start"))
-			bufferNode.AddEdgeNext(&s.synG, startNode)
+
 			wordNode := s.synG.GetNode(generator("{" + token.data + "}"))
-			startNode.AddEdgeNext(&s.synG, wordNode)
+			bufferNode.AddEdgeNext(&s.synG, wordNode)
 			jumpNode := s.synG.GetNode(generator("jmp"))
 			wordNode.AddEdgeNext(&s.synG, jumpNode)
-			startBuffer = startNode
+			startBuffer = bufferNode
 			bufferNode = jumpNode
 			//Basically just add the word and next to it its jump node
 			// So when generating, the control will pass to the node at the location and save the exit in a stack
 			// Then when it reached its local collapse node, then the control will automatically come back to default
 		case character, regexrange:
 			//True leaf nodes just add simply to next and update bufferNode
-			startNode := s.synG.GetNode(generator("start"))
-			bufferNode.AddEdgeNext(&s.synG, startNode)
 			leafNode := s.synG.GetNode(generator("{" + token.data + "}"))
-			startNode.AddEdgeNext(&s.synG, leafNode)
+			bufferNode.AddEdgeNext(&s.synG, leafNode)
 			jumpNode := s.synG.GetNode(generator("jmp"))
 			leafNode.AddEdgeNext(&s.synG, jumpNode)
-			startBuffer = startNode
+			startBuffer = bufferNode
 			bufferNode = jumpNode
 		case maybe:
 			startBuffer.AddEdgeNext(&s.synG, bufferNode) //An option to skip to the end
