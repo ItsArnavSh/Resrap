@@ -1,5 +1,5 @@
 package main
 
 func main() {
-	parser("grammar/test.g4")
+	parser("grammar/C.g4")
 }
