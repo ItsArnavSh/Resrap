@@ -2,6 +2,7 @@ package resrap
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"unicode"
 
@@ -15,16 +16,17 @@ type scanner struct {
 type TokenType int8
 
 const (
-	word       TokenType = iota //Normal words
-	character                   //'...'
-	maybe                       //?
-	oneormore                   //+
-	anyno                       //*
-	bracks                      //(...)
-	option                      // |
-	padding                     //just to account for my bad indexing skills
-	regexrange                  //[...]
-	infinite                    //^
+	word        TokenType = iota //Normal words
+	character                    //'...'
+	maybe                        //?
+	oneormore                    //+
+	anyno                        //*
+	bracks                       //(...)
+	option                       // |
+	padding                      //just to account for my bad indexing skills
+	regexrange                   //[...]
+	infinite                     //^
+	probability                  //<...>
 
 )
 
@@ -48,6 +50,8 @@ func (t TokenType) String() string {
 		return "regexrange [...]"
 	case infinite:
 		return "Infinite ^"
+	case probability:
+		return "Probability <...>"
 	default:
 		return fmt.Sprintf("unknown(%d)", t)
 	}
@@ -145,7 +149,25 @@ func (s *scanner) SeperateTokens(content string) []Token {
 				// unmatched '('
 				tokens = append(tokens, Token{string(ch), word})
 			}
-
+		case ch == '<':
+			flush()
+			j := i + 1
+			depth := 1
+			for j < len(content) && depth > 0 {
+				if content[j] == '<' {
+					depth++
+				} else if content[j] == '>' {
+					depth--
+				}
+				j++
+			}
+			if depth == 0 {
+				tokens = append(tokens, Token{content[i : j-1], probability})
+				i = j - 1
+			} else {
+				// unmatched '<'
+				tokens = append(tokens, Token{string(ch), word})
+			}
 		case ch == '\'':
 			flush()
 			j := i + 1
@@ -207,15 +229,30 @@ func (s *scanner) addStatement(heading, content string, depth bool) (*syntaxNode
 	tokens = append(tokens, Token{"", padding})
 	bufferNode := parentNode
 	var startBuffer *syntaxNode //Stores the starts
-	for _, token := range tokens {
+	prob := func(index int) float32 {
+		index++
+		//If the function can find a probability next to it, cool, return its value
+		// If its not, just return a .50 it will be normalized later on anyways
+		if tokens[index].typ != probability {
+
+			return 0.5
+		}
+		num := tokens[index].data[1:]
+		numf, err := strconv.ParseFloat(num, 32)
+		if err != nil {
+			return 0
+		}
+		return float32(numf)
+	}
+	for i, token := range tokens {
 		switch token.typ {
 		case word:
 			//Just leave it as is, we will assume its definition exists, here we will simply need to generate an exit case
 
 			wordNode := s.synG.GetNode(generator("{" + token.data + "}"))
-			bufferNode.AddEdgeNext(&s.synG, wordNode)
+			bufferNode.AddEdgeNext(&s.synG, wordNode, prob(i))
 			jumpNode := s.synG.GetNode(generator("jmp"))
-			wordNode.AddEdgeNext(&s.synG, jumpNode)
+			wordNode.AddEdgeNext(&s.synG, jumpNode, 1) //Prob does not matter
 			startBuffer = bufferNode
 			bufferNode = jumpNode
 			//Basically just add the word and next to it its jump node
@@ -224,33 +261,34 @@ func (s *scanner) addStatement(heading, content string, depth bool) (*syntaxNode
 		case character, regexrange:
 			//True leaf nodes just add simply to next and update bufferNode
 			leafNode := s.synG.GetNode(generator("{" + token.data + "}"))
-			bufferNode.AddEdgeNext(&s.synG, leafNode)
+			bufferNode.AddEdgeNext(&s.synG, leafNode, prob(i))
 			jumpNode := s.synG.GetNode(generator("jmp"))
-			leafNode.AddEdgeNext(&s.synG, jumpNode)
+			leafNode.AddEdgeNext(&s.synG, jumpNode, 1)
 			startBuffer = bufferNode
 			bufferNode = jumpNode
 		case maybe:
-			startBuffer.AddEdgeNext(&s.synG, bufferNode) //An option to skip to the end
+			startBuffer.AddEdgeNext(&s.synG, bufferNode, 1-prob(i)) //An option to skip to the end
 		case oneormore:
-			bufferNode.AddEdgeNext(&s.synG, startBuffer) //An option to go to the start
+			bufferNode.AddEdgeNext(&s.synG, startBuffer, prob(i)) //An option to go to the start
 		case anyno:
-			startBuffer.AddEdgeNext(&s.synG, bufferNode) //Well both of them combined
-			bufferNode.AddEdgeNext(&s.synG, startBuffer)
+			startBuffer.AddEdgeNext(&s.synG, bufferNode, 1-prob(i)) //Well both of them combined
+			bufferNode.AddEdgeNext(&s.synG, startBuffer, prob(i))
 		case option:
 			//in Case of an option, no need to really do anything, just set the buffer settings back to the parent
-			bufferNode.AddEdgeNext(&s.synG, endNode)
+			bufferNode.AddEdgeNext(&s.synG, endNode, prob(i))
 			bufferNode = parentNode
 			startBuffer = nil
 		case padding:
-			bufferNode.AddEdgeNext(&s.synG, endNode)
+			bufferNode.AddEdgeNext(&s.synG, endNode, 1)
 		case bracks:
 			//Get the final bracket
 			startBuffer, bufferNode = s.addStatement(bufferNode.name, token.data[1:len(token.data)-1], true)
 		case infinite:
 			//Now at the end it will loop back to this case
-			endNode.AddEdgeNext(&s.synG, startBuffer)
+			endNode.AddEdgeNext(&s.synG, startBuffer, prob(i))
+		default:
+			continue
 		}
-
 	}
 	return parentNode, endNode
 }
