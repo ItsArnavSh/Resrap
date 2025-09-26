@@ -52,6 +52,10 @@ float test(){
 ```
 
 ---
+## Installation
+```bash
+go get github.com/ItsArnavSh/Resrap
+```
 ## Usage
 ```golang
 func examplecode() {
