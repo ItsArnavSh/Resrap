@@ -1,4 +1,4 @@
-package main
+package resrap
 
 import (
 	"fmt"
@@ -7,39 +7,38 @@ import (
 	"github.com/golang-collections/collections/stack"
 )
 
-type SyntaxNode struct {
-	next []*SyntaxNode
+type syntaxNode struct {
+	next []*syntaxNode
 	name string
 }
 
-func (s *SyntaxNode) AddEdgeNext(g *SyntaxGraph, node *SyntaxNode) {
+func (s *syntaxNode) AddEdgeNext(g *syntaxGraph, node *syntaxNode) {
 	s.next = append(s.next, node)
 	g.nodeRef[node.name] = node
 
 }
 
-type SyntaxGraph struct {
-	nodeRef map[string]*SyntaxNode
-	prng    PRNG
+type syntaxGraph struct {
+	nodeRef map[string]*syntaxNode
+	prng    prng
 }
 
-func (s *SyntaxGraph) GetNode(name string) *SyntaxNode {
+func (s *syntaxGraph) GetNode(name string) *syntaxNode {
 	if s.nodeRef[name] != nil {
 		return s.nodeRef[name]
 	}
-	newNode := &SyntaxNode{nil, name}
+	newNode := &syntaxNode{nil, name}
 	s.nodeRef[name] = newNode
 	return newNode
 }
 
-func NewSyntaxGraph() SyntaxGraph {
-	return SyntaxGraph{
-		nodeRef: make(map[string]*SyntaxNode),
+func NewSyntaxGraph() syntaxGraph {
+	return syntaxGraph{
+		nodeRef: make(map[string]*syntaxNode),
 	}
 }
 
-// RandomWalker does the walk and returns the generated string
-func (s *SyntaxGraph) RandomWalker(prng *PRNG, start string, no int32) string {
+func (s *syntaxGraph) GraphWalk(prng *prng, start string) string {
 	var result strings.Builder
 	jumpStack := stack.New()
 	startingNode := s.nodeRef[start]
@@ -47,14 +46,14 @@ func (s *SyntaxGraph) RandomWalker(prng *PRNG, start string, no int32) string {
 		return ""
 	}
 	current := startingNode
-	visited := int32(0)
-	for visited < no && current != nil {
+	for current != nil {
 		// Process logic only if name starts with ' or [
 		if len(current.name) > 0 {
 			if strings.HasPrefix(current.name, "~:{'") {
 				// Extract content between quotes and handle escape sequences
 				content := current.name[4:strings.LastIndex(current.name, "'")]
 				unescaped := unescapeString(content)
+
 				result.WriteString(unescaped)
 			} else if strings.HasPrefix(current.name, "~:{[") {
 				chars, err := parseCharClass(prng, current.name[3:1+strings.LastIndex(current.name, "]")])
@@ -76,7 +75,6 @@ func (s *SyntaxGraph) RandomWalker(prng *PRNG, start string, no int32) string {
 				continue // Skip the normal next node selection
 			}
 		}
-		visited++
 		// move to next (randomly selected if multiple options)
 		if len(current.next) > 0 {
 			current = current.next[prng.RandomInt(0, len(current.next))]
@@ -129,7 +127,7 @@ var wordList = []string{
 	"database", "table", "query", "result", "error", "success", "failure", "debug",
 }
 
-func parseCharClass(prng *PRNG, charClass string) ([]string, error) {
+func parseCharClass(prng *prng, charClass string) ([]string, error) {
 	if len(charClass) < 2 || charClass[0] != '[' || charClass[len(charClass)-1] != ']' {
 		return nil, fmt.Errorf("invalid format: %s", charClass)
 	}

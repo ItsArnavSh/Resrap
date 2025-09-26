@@ -1,4 +1,4 @@
-package main
+package resrap
 
 import (
 	"fmt"
@@ -8,8 +8,8 @@ import (
 	"github.com/google/uuid"
 )
 
-type Scanner struct {
-	synG SyntaxGraph
+type scanner struct {
+	synG syntaxGraph
 }
 
 type TokenType int8
@@ -55,7 +55,7 @@ type Token struct {
 	typ  TokenType
 }
 
-func (s *Scanner) ScanLine(line string) {
+func (s *scanner) ScanLine(line string) {
 	// Remove newlines and trim spaces
 	line = strings.TrimSpace(line)
 
@@ -77,7 +77,7 @@ func (s *Scanner) ScanLine(line string) {
 
 }
 
-func (s *Scanner) SeperateTokens(content string) []Token {
+func (s *scanner) SeperateTokens(content string) []Token {
 	var tokens []Token
 	var buffer strings.Builder
 
@@ -183,12 +183,12 @@ func (s *Scanner) SeperateTokens(content string) []Token {
 	return tokens
 }
 
-func NewScanner() Scanner {
-	return Scanner{
+func NewScanner() scanner {
+	return scanner{
 		synG: NewSyntaxGraph(),
 	}
 }
-func (s *Scanner) addStatement(heading, content string, depth bool) (*SyntaxNode, *SyntaxNode) {
+func (s *scanner) addStatement(heading, content string, depth bool) (*syntaxNode, *syntaxNode) {
 	endNode := s.synG.GetNode("~:end:~")
 	if depth {
 
@@ -200,7 +200,7 @@ func (s *Scanner) addStatement(heading, content string, depth bool) (*SyntaxNode
 	tokens := s.SeperateTokens(content)
 	tokens = append(tokens, Token{"", padding})
 	bufferNode := parentNode
-	var startBuffer *SyntaxNode //Stores the starts
+	var startBuffer *syntaxNode //Stores the starts
 	for _, token := range tokens {
 		switch token.typ {
 		case word:
