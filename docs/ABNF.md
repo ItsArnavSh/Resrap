@@ -1,7 +1,7 @@
 
 # ABNF – Awesome BNF
 
-**ABNF** (Awesome BNF) is a lightweight, custom grammar format designed for the **Resrap parser**. It extends standard BNF with additional operators and conventions to make grammar definitions both expressive and efficient for high-throughput code generation.
+**ABNF** (Awesome BNF) is a lightweight, custom grammar format designed for the **Resrap parser**. It extends standard EBNF with additional operators and conventions to make grammar definitions both expressive and efficient for high-throughput code generation.
 
 This document explains the syntax, operators, and regex usage in ABNF.
 
