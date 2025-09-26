@@ -1,153 +1,90 @@
-
 # ABNF – Awesome BNF
 
-**ABNF** (Awesome BNF) is a lightweight, custom grammar format designed for the **Resrap parser**. It extends standard EBNF with additional operators and conventions to make grammar definitions both expressive and efficient for high-throughput code generation.
-
-This document explains the syntax, operators, and regex usage in ABNF.
+**ABNF (Awesome BNF)** is a lightweight, custom grammar format designed for the **Resrap code generation tool**. It extends standard EBNF/BNF with **probabilities** and **infinite generation**, making grammar definitions **expressive, flexible, and efficient** for high-throughput code generation.
 
 ---
 
-## 1. Basic Structure
+## 1. Quick Revision: EBNF and Grammar
 
-A **statement** in ABNF has the form:
+ABNF inherits the basics of EBNF:
 
 ```abnf
 function : rules ;
 ```
 
-* **function** → The name of the non-terminal rule.
-* **rules** → A sequence of **functions, characters, tokens, or terminal definitions**.
+* **function** → Name of the non-terminal rule.
+* **rules** → Sequence of non-terminals, terminals, or characters.
 
-Rules can reference other functions, terminals, or characters, forming a **directed graph** of grammar rules.
+### Standard EBNF Operators
 
----
-
-## 2. Operators
-
-ABNF supports the following operators for defining complex structures:
-
-| Operator | Meaning                                                                                              |
-| -------- | ---------------------------------------------------------------------------------------------------- |
-| `+`      | One or more repetitions of the preceding element.                                                    |
-| `*`      | Zero or more repetitions of the preceding element.                                                   |
-| `?`      | Optional element (zero or one occurrence).                                                           |
-| `()`     | Grouping; treat enclosed sequence as a single element.                                               |
-| `^`      | Infinite cycle; connects the current rule’s end back to a target node, enabling infinite generation. |
-
-**Examples:**
-
-```abnf
-program : header+ function^;   # program = one or more headers followed by infinitely repeatable functions
-header  : '#include<' identifier '.h>\n';  # header includes a file
-functioncontent : block+;      # function content is one or more blocks
-```
-
-* `header+` → generate **one or more headers**
-* `function^` → after generating a function, **loop back to the function node** (infinite repetition)
-* `block+` → one or more blocks inside a function
-
----
-
-## 3. Sample ABNF Grammar
-
-```abnf
-program : header+ function^;
-
-header : '#include<' identifier '.h>\n';
-
-function : functionheader '{' '\n' functioncontent '}';
-
-functionheader : datatype ' ' identifier '(' ')';
-
-functioncontent : block+;
-
-block : statement+ | ifblock | whileblock;
-
-ifblock : 'if(' conditionalexpression '){\n' statement+ '}\n';
-
-whileblock : 'while(' conditionalexpression '){\n' statement+ '}\n';
-
-conditionalexpression : conditionalexpone (conditionaljoin conditionalexpone)*;
-
-conditionalexpone : (operand conditionaloperation operand);
-
-conditionaloperation : ' < ' | ' > ';
-
-conditionaljoin : ' && ' | ' || ';
-
-statement : assignment;
-
-assignment : datatype ' ' identifier ' = ' expression ';\n';
-
-expression : operand (operator (operand | '(' expression ')'))*;
-
-operand : identifier | integer | float;
-
-operator : ' + ' | ' - ' | ' * ' | ' / ';
-
-datatype : 'int' | 'float' | 'double';
-```
-
----
-
-## 4. Terminals & Regex
-
-ABNF allows defining terminals using **regex-like patterns**:
-
-| Terminal     | Pattern        | Description                 |
-| ------------ | -------------- | --------------------------- |
-| `identifier` | `[A-Z]`        | Single uppercase letter     |
-| `integer`    | `[0-9]`        | Single digit                |
-| `float`      | `[0-9]\.[0-9]` | Decimal number with one dot |
-
-* Regex in ABNF is **always enclosed in square brackets**.
-* The parser treats the regex as a **terminal matcher**, generating tokens that match the pattern.
-* Only simple character classes are supported: `[A-Z]`, `[0-9]`, `[a-z]`, etc.
+| Operator | Meaning                                               |
+| -------- | ----------------------------------------------------- |
+| `+`      | One or more repetitions of the preceding element      |
+| `*`      | Zero or more repetitions                              |
+| `?`      | Optional element (zero or one occurrence)             |
+| `()`     | Grouping; treat enclosed sequence as a single element |
 
 **Example:**
 
 ```abnf
-identifier : [A-Z];   # generates A, B, C ... Z
-integer    : [0-9];   # generates 0-9
+expression : operand (operator operand)* ;  # operand followed by zero or more operator-operand pairs
 ```
+
+Statements form a **directed graph**, allowing nodes to reference others and create structured generation flows.
 
 ---
 
-## 5. Grouping and Nesting
+## 2. Infinite Generation (`^`)
 
-* Use parentheses `()` to group sequences:
+Meet the **Infinity Operator `^`**:
+
+* Connects the **end of a rule back to the current node**, allowing **infinite generation**.
+* The generator **does not halt** when reaching this node; it loops back to continue generation.
+
+**Example (C Grammar):**
 
 ```abnf
-expression : operand (operator operand)*;  # operand followed by zero or more operator-operand pairs
+program : function^;
 ```
 
-* Supports **nested structures**, e.g., `((A+B)*C)`
-* Combined with `+`, `*`, `?` operators, it allows defining complex grammars concisely.
+* Generates **functions endlessly** until a token limit is reached.
+* Can be combined with other operators (`+`, `*`, `?`) for **complex, repeatable structures**.
 
 ---
 
-## 6. Infinite Generation (`^`)
+## 3. Probabilities (`<...>`)
 
-* The `^` operator creates a **loop in the grammar graph**, enabling infinite traversal:
+By default, choices in grammar rules are **equally likely**. ABNF allows specifying **weighted probabilities** for finer control:
 
 ```abnf
-function^  # after generating a function, loop back to its start
+char : a<0.2> | b<0.8>;
+a    : 'A';
+b    : 'B';
 ```
 
-* Combined with **stack-based traversal**, this ensures infinite but safe generation of code blocks.
+* `a` is chosen **20% of the time**, `b` **80%**.
+* Probabilities are **normalized automatically** if they don’t sum to 1.
+* If no probability is specified, choices are **assumed equal**.
+
+**Looping with probability:**
+
+```abnf
+a : b+<0.4>;
+```
+
+* 40% chance to **loop back to `b`**, 60% to **move ahead**.
+* Same logic applies to `*`, `?`, and `^`.
 
 ---
 
-## 7. Summary
+## 4. Summary
 
-ABNF extends standard BNF with:
+ABNF extends standard BNF/EBNF with:
 
-* **Repetition operators**: `+`, `*`
-* **Optionality**: `?`
+* **Repetition operators**: `+`, `*`, `?`
 * **Grouping**: `()`
-* **Infinite cycles**: `^`
-* **Regex terminals**: `[A-Z]`, `[0-9]`, `[a-z]`
+* **Infinite generation**: `^` → loop nodes infinitely
+* **Weighted choices**: `<prob>` → specify probabilities for branches
+* **Default equal probability** → backwards compatibility
 
-This allows **structured, efficient, and infinite code generation** for the Resrap parser, making it ideal for grammar-based fuzzing, testing, or code synthesis.
-
----
+ABNF is ideal for **stochastic code generation**, fuzzing, and testing, giving users full control over **structure, randomness, and recursion** in generated code.

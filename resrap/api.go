@@ -21,6 +21,7 @@ func (r *Resrap) ParseGrammar(name, grammar string) {
 	lang := newLang()
 	lang.ParserString(grammar)
 	r.languageGraph[name] = lang
+	r.languageGraph[name].graph.Normalize()
 }
 
 // ParseGrammarFile parses a grammar from a file and stores it under the given name.
@@ -30,6 +31,7 @@ func (r *Resrap) ParseGrammarFile(name, location string) {
 	lang := newLang()
 	lang.ParserFile(location)
 	r.languageGraph[name] = lang
+	r.languageGraph[name].graph.Normalize()
 }
 
 // GenerateRandom generates content from the grammar identified by 'name'.

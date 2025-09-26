@@ -2,20 +2,26 @@ package resrap
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/golang-collections/collections/stack"
 )
 
+type nextoption struct {
+	node        *syntaxNode
+	probability float32
+}
 type syntaxNode struct {
-	next []*syntaxNode
+	next []nextoption
+	cf   []float32
 	name string
 }
 
-func (s *syntaxNode) AddEdgeNext(g *syntaxGraph, node *syntaxNode) {
-	s.next = append(s.next, node)
+func (s *syntaxNode) AddEdgeNext(g *syntaxGraph, node *syntaxNode, probability float32) {
+	newNode := nextoption{node: node, probability: probability}
+	s.next = append(s.next, newNode)
 	g.nodeRef[node.name] = node
-
 }
 
 type syntaxGraph struct {
@@ -27,7 +33,7 @@ func (s *syntaxGraph) GetNode(name string) *syntaxNode {
 	if s.nodeRef[name] != nil {
 		return s.nodeRef[name]
 	}
-	newNode := &syntaxNode{nil, name}
+	newNode := &syntaxNode{nil, nil, name}
 	s.nodeRef[name] = newNode
 	return newNode
 }
@@ -37,7 +43,33 @@ func NewSyntaxGraph() syntaxGraph {
 		nodeRef: make(map[string]*syntaxNode),
 	}
 }
+func (s *syntaxGraph) Normalize() {
+	//We will even out all the children going through the whole graph
+	//And also create a cumulative frequency graph that will help in traversing
+	for _, node := range s.nodeRef {
+		//Extract the elements in a diff array
+		var CF []float32
 
+		var cf float32
+		var sum float32
+		for _, n := range node.next {
+			CF = append(CF, n.probability)
+			sum += n.probability
+		}
+		// Divide each element by the sum
+		for i, _ := range CF {
+			CF[i] = cf + CF[i]/sum
+
+			// convert it into a CF
+			cf = CF[i]
+		}
+		node.cf = CF
+		//Now we have a cool little CF Array Normalized to 1
+		// When picking random values, we pick one between 0 and 1
+		// And then choose its closest value from the array
+		// For probability based selections
+	}
+}
 func (s *syntaxGraph) GraphWalk(prng *prng, start string, tokens int) string {
 	var result strings.Builder
 	jumpStack := stack.New()
@@ -66,7 +98,7 @@ func (s *syntaxGraph) GraphWalk(prng *prng, start string, tokens int) string {
 				}
 			} else if strings.HasPrefix(current.name, "~:{") {
 				name := current.name[3:strings.Index(current.name, "}")]
-				jumpStack.Push(current.next[0].name)
+				jumpStack.Push(current.next[0].node.name)
 				current = s.GetNode(name)
 				continue // Skip the normal next node selection
 			} else if current.name == "~:end:~" {
@@ -83,7 +115,13 @@ func (s *syntaxGraph) GraphWalk(prng *prng, start string, tokens int) string {
 		}
 		// move to next (randomly selected if multiple options)
 		if len(current.next) > 0 {
-			current = current.next[prng.RandomInt(0, len(current.next))]
+
+			value := float32(prng.Random())
+			index := sort.Search(len(current.cf), func(i int) bool {
+				return current.cf[i] >= value
+			})
+
+			current = current.next[index].node
 
 		} else {
 			current = nil
