@@ -54,7 +54,7 @@ float test(){
 ---
 ## Installation
 ```bash
-go get github.com/ItsArnavSh/Resrap
+go get github.com/ItsArnavSh/Resrap@v0.1.0
 ```
 ## Usage
 ```golang
