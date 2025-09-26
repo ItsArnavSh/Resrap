@@ -24,6 +24,7 @@ const (
 	option                      // |
 	padding                     //just to account for my bad indexing skills
 	regexrange                  //[...]
+	infinite                    //^
 
 )
 
@@ -45,6 +46,8 @@ func (t TokenType) String() string {
 		return "option (|)"
 	case regexrange:
 		return "regexrange [...]"
+	case infinite:
+		return "Infinite ^"
 	default:
 		return fmt.Sprintf("unknown(%d)", t)
 	}
@@ -159,7 +162,9 @@ func (s *scanner) SeperateTokens(content string) []Token {
 		case ch == '?':
 			flush()
 			tokens = append(tokens, Token{"?", maybe})
-
+		case ch == '^':
+			flush()
+			tokens = append(tokens, Token{"^", infinite})
 		case ch == '+':
 			flush()
 			tokens = append(tokens, Token{"+", oneormore})
@@ -189,6 +194,7 @@ func NewScanner() scanner {
 	}
 }
 func (s *scanner) addStatement(heading, content string, depth bool) (*syntaxNode, *syntaxNode) {
+	//The definitive end block
 	endNode := s.synG.GetNode("~:end:~")
 	if depth {
 
@@ -240,7 +246,9 @@ func (s *scanner) addStatement(heading, content string, depth bool) (*syntaxNode
 		case bracks:
 			//Get the final bracket
 			startBuffer, bufferNode = s.addStatement(bufferNode.name, token.data[1:len(token.data)-1], true)
-
+		case infinite:
+			//Now at the end it will loop back to this case
+			endNode.AddEdgeNext(&s.synG, startBuffer)
 		}
 
 	}

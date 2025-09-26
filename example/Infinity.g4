@@ -1,0 +1,2 @@
+program : lines^;
+lines: 'a';

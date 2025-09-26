@@ -36,16 +36,16 @@ func (r *Resrap) ParseGrammarFile(name, location string) {
 // starting_node: the starting symbol in the grammar for generation.
 // Returns a string containing the generated content.
 // The generation is non-deterministic (random).
-func (r *Resrap) GenerateRandom(name, starting_node string) string {
+func (r *Resrap) GenerateRandom(name, starting_node string, tokens int) string {
 	prng := newPRNG(0)
-	return r.languageGraph[name].graph.GraphWalk(&prng, starting_node)
+	return r.languageGraph[name].graph.GraphWalk(&prng, starting_node, tokens)
 }
 
 // GenerateWithSeeded generates content from the grammar identified by 'name'.
 // starting_node: the starting symbol in the grammar for generation.
 // seed: a numeric seed to make generation deterministic.
 // Returns a string containing the generated content.
-func (r *Resrap) GenerateWithSeeded(name, starting_node string, seed uint64) string {
+func (r *Resrap) GenerateWithSeeded(name, starting_node string, seed uint64, tokens int) string {
 	prng := newPRNG(seed)
-	return r.languageGraph[name].graph.GraphWalk(&prng, starting_node)
+	return r.languageGraph[name].graph.GraphWalk(&prng, starting_node, tokens)
 }

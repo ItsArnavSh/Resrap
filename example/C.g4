@@ -1,4 +1,4 @@
-program : header+ function+;
+program : header+ function^;
 header:'#include<'identifier'.h>\n';
 function:functionheader'{''\n'functioncontent'}';
 functionheader:datatype ' ' identifier '(' ')' ;

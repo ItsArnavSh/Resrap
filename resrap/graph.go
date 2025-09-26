@@ -38,22 +38,26 @@ func NewSyntaxGraph() syntaxGraph {
 	}
 }
 
-func (s *syntaxGraph) GraphWalk(prng *prng, start string) string {
+func (s *syntaxGraph) GraphWalk(prng *prng, start string, tokens int) string {
 	var result strings.Builder
 	jumpStack := stack.New()
 	startingNode := s.nodeRef[start]
 	if startingNode == nil {
 		return ""
 	}
+	printedTokens := 0
 	current := startingNode
 	for current != nil {
+		if printedTokens >= tokens {
+			return result.String()
+		}
 		// Process logic only if name starts with ' or [
 		if len(current.name) > 0 {
 			if strings.HasPrefix(current.name, "~:{'") {
 				// Extract content between quotes and handle escape sequences
 				content := current.name[4:strings.LastIndex(current.name, "'")]
 				unescaped := unescapeString(content)
-
+				printedTokens++
 				result.WriteString(unescaped)
 			} else if strings.HasPrefix(current.name, "~:{[") {
 				chars, err := parseCharClass(prng, current.name[3:1+strings.LastIndex(current.name, "]")])
@@ -66,18 +70,21 @@ func (s *syntaxGraph) GraphWalk(prng *prng, start string) string {
 				current = s.GetNode(name)
 				continue // Skip the normal next node selection
 			} else if current.name == "~:end:~" {
-				nameInt := jumpStack.Pop()
-				name, ok := nameInt.(string)
-				if !ok {
-					break
+				if jumpStack.Len() != 0 {
+					nameInt := jumpStack.Pop()
+					name, ok := nameInt.(string)
+					if !ok {
+						break
+					}
+					current = s.GetNode(name)
+					continue // Skip the normal next node selection
 				}
-				current = s.GetNode(name)
-				continue // Skip the normal next node selection
 			}
 		}
 		// move to next (randomly selected if multiple options)
 		if len(current.next) > 0 {
 			current = current.next[prng.RandomInt(0, len(current.next))]
+
 		} else {
 			current = nil
 		}
