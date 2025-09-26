@@ -52,7 +52,17 @@ float test(){
 ```
 
 ---
-
+## Usage
+```golang
+func examplecode() {
+	graphs := resrap.NewResrap()
+	graphs.ParseGrammarFile("C", "example/C.g4")
+	random_content := graphs.GenerateRandom("C", "program")
+	fmt.Println(random_content)
+	seeded_content := graphs.GenerateWithSeeded("C", "program", 20)//20 is the seed
+	fmt.Println(seeded_content)
+}
+```
 ## Roadmap
 
 * **NextUP**
