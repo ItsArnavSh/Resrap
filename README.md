@@ -52,14 +52,23 @@ float test(){
 ```
 
 ---
-
+## Usage
+```golang
+func examplecode() {
+	graphs := resrap.NewResrap()
+	graphs.ParseGrammarFile("C", "example/C.g4")
+	random_content := graphs.GenerateRandom("C", "program")
+	fmt.Println(random_content)
+	seeded_content := graphs.GenerateWithSeeded("C", "program", 20)//20 is the seed
+	fmt.Println(seeded_content)
+}
+```
 ## Roadmap
 
-* **v1** – Random snippet generator (current release)
-* **v2** – PRNG & seed support for deterministic generation
-* **v3** – Weighted nodes to bias generation (e.g., more variables, fewer numbers)
-* Future – Multi-language grammars, additional formatting options
-
+* **NextUP**
+- Weighted nodes to bias generation (e.g., more variables, fewer numbers)
+- Have infinite Code length so it can be generated upto any number of lines as needed.
+- Maintain Generation sessions to allow you generate continuous snippets in breaks (Eg first get first 10 lines then next 10 and so on)
 ---
 
 ## Motivation
