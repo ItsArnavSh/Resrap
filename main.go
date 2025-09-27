@@ -8,40 +8,23 @@ import (
 )
 
 func main() {
-	// Config
-	numJobs := 10000
-	tokensPerJob := 100
-
-	// --- SINGLE-THREADED RESRAP ---
-	fmt.Println("Starting single-threaded test...")
+	// Create a new single-threaded Resrap
 	resrapSync := resrap.NewResrap()
+
+	// Parse grammar file (single-threaded)
+	fmt.Println("Parsing grammar...")
+	startParse := time.Now()
 	resrapSync.ParseGrammarFile("C", "example/C.g4")
+	parseElapsed := time.Since(startParse)
+	fmt.Printf("Grammar parsed in %v\n", parseElapsed)
 
-	start := time.Now()
-	for i := 0; i < numJobs; i++ {
-		_ = resrapSync.GenerateRandom("C", "program", tokensPerJob)
-	}
-	elapsedSync := time.Since(start)
-	fmt.Printf("Single-threaded: %v for %d jobs of %d tokens\n", elapsedSync, numJobs, tokensPerJob)
+	// Generate a huge sequence (4 million tokens)
+	numTokens := 4000000
+	fmt.Printf("Generating %d tokens (single-threaded)...\n", numTokens)
+	startGen := time.Now()
+	code := resrapSync.GenerateRandom("C", "program", numTokens)
+	genElapsed := time.Since(startGen)
 
-	// --- MULTI-THREADED RESRAPMT ---
-	fmt.Println("Starting multi-threaded test...")
-	poolSize := 20
-	waitQueueSize := 10000
-	resrapMT := resrap.NewResrapMT(poolSize, waitQueueSize)
-	resrapMT.ParseGrammarFile("C", "example/C.g4")
-	resrapMT.StartResrap()
-
-	start = time.Now()
-	for i := 0; i < numJobs; i++ {
-		jobID := fmt.Sprintf("%d", i)
-		resrapMT.GenerateRandom(jobID, "C", "program", tokensPerJob)
-	}
-
-	// Collect all results
-	for i := 0; i < numJobs; i++ {
-		<-resrapMT.CodeChannel
-	}
-	elapsedMT := time.Since(start)
-	fmt.Printf("Multi-threaded: %v for %d jobs of %d tokens\n", elapsedMT, numJobs, tokensPerJob)
+	fmt.Printf("Generated %d tokens in %v\n", numTokens, genElapsed)
+	fmt.Printf("First 500 chars of output: \n%s\n", code[:500])
 }
