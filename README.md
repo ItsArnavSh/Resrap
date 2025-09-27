@@ -6,9 +6,9 @@
 
 ## What is Resrap?
 
-Resrap is a **seedable, grammar-based code snippet generator**. Instead of parsing code, it **generates code** from formal grammars — producing endless, realistic-looking (or hilariously nonsensical) code snippets.
+Resrap is a **seedable, grammar-based code snippet generator**. Instead of parsing code, it **generates code** from formal grammars — producing endless, realistic-looking (or hilariously nonsensical) snippets.
 
-It works with **any language** that can be described with a grammar (even English if you like!), and is perfect for:
+It works with **any language** that can be described with a grammar (even English if you like!) and is perfect for:
 
 * Typing practice with realistic-looking snippets
 * Stress-testing parsers, syntax highlighters, or linters
@@ -30,55 +30,30 @@ Resrap reads a grammar and builds a **graph of expansions**. It then randomly tr
 **Example grammar snippet (simplified C):**
 
 ```abnf
-program : header+ function^;
-
-header : '#include<' identifier '.h>\n';
-function : functionheader '{' '\n' functioncontent '}';
-functionheader : datatype ' ' identifier '(' ')' ;
-functioncontent : block+;
-block : statement+ | ifblock | whileblock;
-ifblock : 'if(' conditionalexpression '){\n' statement+ '}\n';
-whileblock : 'while(' conditionalexpression '){\n' statement+ '}\n';
-statement : assignment;
-assignment : datatype ' ' identifier ' = ' expression ';\n';
-expression : operand (operator (operand | '(' expression ')'))*;
-operand : identifier | integer | float;
-operator : ' + ' | ' - ' | ' * ' | ' / ';
-datatype : 'int' | 'float' | 'double';
-```
-
-**ABNF new features in action:**
-
-```abnf
-char : a<0.2> | b<0.8>;
-a    : 'A';
-b    : 'B';
-
-program : function^;  # infinite generation of functions
-```
-
-* Probabilities (`<...>`) control **branch selection weights**.
-* Infinite generation (`^`) allows looping nodes without halting generation.
+program : (header+<0.4>) function^;
+header:'#include<'identifier'.h>\n';
+function:functionheader'{''\n'functioncontent'}';
+functionheader:datatype ' ' identifier '(' ')' ;
+...
+...
+````
 
 ---
 
-**Generated code example:**
+## Generated code example
 
 ```c
-#include<hello.h>
-#include<password.h>
-float database(){
-    int error = login + 7.77 - (database);
+#include<success.h>
+#include<email.h>
+double class(){
+while(variable < query && password < variable){
+int result = variable + (user / hello);
 }
-float test(){
-    double failure = 42 * 7;
-    if(start > 999.77 && code > 101){
-        float method = 77 + (table * 42.88);
-        float database = 7.256 / 42 * function;
-    }
-    double data = 999.13 - (table + (101.13));
-    float test = hello / 88.13 + method + (101 / table);
+}double user(){
+if(class > user && result < class){
+float password = 1024.13 - (13.7);
 }
+}double hello(
 ```
 
 ---
@@ -91,18 +66,25 @@ go get github.com/ItsArnavSh/Resrap@v0.1.0
 
 ---
 
-## Usage
+## Single-Threaded Usage
 
 ```golang
-func examplecode() {
-	graphs := resrap.NewResrap()
-	graphs.ParseGrammarFile("C", "example/C.g4")
-	
-	random_content := graphs.GenerateRandom("C", "program",400)
-	fmt.Println(random_content)
-	
-	seeded_content := graphs.GenerateWithSeeded("C", "program", 20,400)//20 is the seed 400 are the tokens 
-	fmt.Println(seeded_content)
+package main
+
+import (
+    "fmt"
+    "github.com/ItsArnavSh/Resrap/resrap"
+)
+
+func main() {
+    r := resrap.NewResrap()
+    r.ParseGrammarFile("C", "example/C.g4")
+
+    code := r.GenerateRandom("C", "program", 400)
+    fmt.Println(code)
+
+    seeded := r.GenerateWithSeeded("C", "program", 20, 400) // 20 = seed, 400 tokens
+    fmt.Println(seeded)
 }
 ```
 
@@ -111,37 +93,74 @@ func examplecode() {
 
 ---
 
+## Multithreaded Usage (ResrapMT)
+
+`ResrapMT` allows **parallel generation** for multiple jobs using a worker pool. This is ideal for **server environments** or **batch processing**.
+
+### Example
+
+```golang
+package main
+
+import (
+    "fmt"
+    "github.com/ItsArnavSh/Resrap/resrap"
+)
+
+func main() {
+    rmt := resrap.NewResrapMT(10, 100) // 10 workers, queue size 100
+    rmt.ParseGrammarFile("C", "example/C.g4")
+    rmt.StartResrap() // spawn worker pool
+
+    // Submit jobs with unique IDs
+    for i := 0; i < 10; i++ {
+        jobID := fmt.Sprintf("job-%d", i)
+        rmt.GenerateRandom(jobID, "C", "program", 100)
+    }
+
+    // Collect results
+    for i := 0; i < 10; i++ {
+        res := <-rmt.CodeChannel
+        fmt.Printf("Job %s generated code: %s\n", res.Id, res.Code[:50])
+    }
+}
+```
+
+### Notes
+
+* **IDs:** You must create unique IDs for each job; results are returned with the ID.
+* **CodeChannel:** A **blocking, unbounded channel** — handle results yourself.
+* **Why multithreaded?** Efficiently handles **many concurrent jobs**, fully utilizing CPU cores while keeping grammar graphs immutable and lock-free.
+
+> For benchmarks and performance comparisons, see [benchmark-results/Multithreading.md](benchmark-results/Multithreading.md).
+
+---
+
 ## Roadmap
 
-- Adding Multithreading Capabilities to serve multiple users
-  
-- Maintain generation sessions: generate snippets in chunks (e.g., first 10 lines, then next 10, etc.)
+* Maintain generation sessions (e.g., generate snippets in chunks)
+* Dynamic worker scaling and idle worker shutdown
 
 ---
 
 ## Motivation
 
-We wanted a way to:
+Resrap was created to:
 
 * Generate **unlimited, realistic code snippets**
-* Avoid copyright issues from using real code in samples or demos
-* Make a **fun, shareable, and deterministic code generator**
-* Give programmers and typists a playground for **syntax, speed, and randomness**
+* Avoid copyright issues from using real code
+* Provide a **fun, deterministic, and probabilistic code generator**
+* Give programmers a playground for **syntax, speed, and randomness**
 
-Resrap is “just a parser… in reverse” — it turns grammars into chaos, one snippet at a time.
+“Just a parser… in reverse.”
 
 ---
 
 ## ABNF (Awesome BNF)
 
-Resrap uses **ABNF**, a lightweight grammar format extending standard EBNF:
+* `^` → Infinite generation (loops nodes without halting)
+* `<prob>` → Weighted probabilities for branching
+* Compatible with standard EBNF operators: `+`, `*`, `?`, `()`
 
-* **`^`** → Infinite generation (loops nodes without halting)
-* **`<prob>`** → Weighted probabilities for branching
-* Default behavior maintains equal probability for unspecified choices
-* Fully compatible with standard EBNF operators: `+`, `*`, `?`, `()`
-
-See [ABNF documentation](docs/ABNF.md) for detailed syntax, examples, and probability usage.
-
----
+See [docs/ABNF.md](docs/ABNF.md) for full syntax and examples.
 
