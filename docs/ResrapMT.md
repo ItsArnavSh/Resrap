@@ -2,7 +2,7 @@
 
 `ResrapMT` is the **multithreaded version** of `Resrap`, designed to efficiently generate code or text from grammars in parallel. It is ideal for handling **many simultaneous requests**, making it perfect for server environments or batch processing.
 
-> For benchmarks and performance comparisons, see [benchmark-results/Multithreading.md](benchmark-results/Multithreading.md).
+> For benchmarks and performance comparisons, see [benchmark-results/Multithreading.md](../benchmark-results/Multithreading.md).
 
 ---
 
