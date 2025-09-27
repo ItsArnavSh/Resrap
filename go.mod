@@ -1,4 +1,4 @@
-module github.com/ItsArnavSh/resrap
+module github.com/ItsArnavSh/Resrap
 
 go 1.24.4
 
