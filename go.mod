@@ -1,4 +1,4 @@
-module github.com/osdc/Resrap
+module github.com/osdc/resrap
 
 go 1.24.4
 
