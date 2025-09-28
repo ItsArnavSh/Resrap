@@ -1,31 +1,11 @@
 <script>
 	import { onMount } from 'svelte';
 	import { loadWasm } from '$lib/wasm.js';
+	import { samplegrammer } from '$lib/template';
 	let result = '';
 	let status = 'loading'; // 'loading' | 'ready' | 'error'
 	// Form inputs
-	let grammar = `program : header+ function^;
-header:'#include<'identifier'.h>\\n';
-function:functionheader'{''\\n'functioncontent'}';
-functionheader:datatype ' ' identifier '(' ')';
-functioncontent:block+;
-block:(statement+) | ifblock | whileblock ;
-ifblock: 'if(' conditionalexpression '){\\n' statement+ '}\\n';
-whileblock :'while(' conditionalexpression '){\\n' statement+ '}\\n';
-conditionalexpression: conditionalexpone (conditionaljoin conditionalexpone)*;
-conditionalexpone: (operand conditionaloperation operand);
-conditionaloperation: ' < ' | ' > ';
-conditionaljoin: ' && ' | ' || ';
-statement:assignment;
-assignment: datatype ' ' identifier ' = ' expression ';\\n';
-expression: operand (operator (operand | '(' expression ')'))*;
-operand: identifier | integer | float;
-operator : ' + ' | ' - ' | ' * ' | ' / ';
-datatype: 'int'|'float'|'double';
-identifier: [A-Z];
-integer:[0-9];
-float:[0-9]'.'[0-9];
-whitespace: ' ';`;
+	let grammar = samplegrammer;
 
 	let startpoint = 'program';
 	let seed = 42;
@@ -87,228 +67,168 @@ whitespace: ' ';`;
 		executionTime > 0 ? (tokensGenerated / (executionTime / 1000)).toFixed(2) : 0;
 </script>
 
-<main>
-	<h1>SvelteKit + Go WASM</h1>
-	<p class="subtitle">Try it yourself segment</p>
-
-	{#if status === 'loading'}
-		<p>⏳ Loading...</p>
-	{:else if status === 'error'}
-		<p>❌ Failed to load WASM</p>
-	{/if}
-
-	{#if status === 'ready'}
-		<div class="container">
-			<!-- Left Side: Grammar, Inputs, and Button -->
-			<div class="left-panel">
-				<label>Grammar</label>
-				<textarea spellcheck="false" bind:value={grammar} rows="20" />
-
-				<!-- Small inputs below grammar -->
-				<div class="small-inputs">
-					<div class="input-group">
-						<label>Start Point</label>
-						<input bind:value={startpoint} type="text" />
-					</div>
-					<div class="input-group">
-						<label>Seed <small>(0 = random)</small></label>
-						<input bind:value={seed} type="number" />
-					</div>
-					<div class="input-group">
-						<label>Token Length</label>
-						<input bind:value={tokenlen} type="number" />
-					</div>
-				</div>
-
-				<button on:click={callGenerateText} disabled={isGenerating}>
-					{isGenerating ? '⏳ Generating...' : 'Generate Text'}
-				</button>
-			</div>
-
-			<!-- Right Side: Output and Stats -->
-			<div class="right-panel">
-				<!-- Output -->
-				<div class="output-section">
-					<label>Result</label>
-					<textarea readonly value={result} rows="20" />
-				</div>
-
-				<!-- Simplified Stats -->
-				{#if result && !isGenerating}
-					<div class="stats">
-						<h3>Ran using Go in WASM on your machine</h3>
-						<div class="stats-headers">
-							<div class="stat-header">Time taken</div>
-							<div class="stat-header">Tokens/second</div>
-							<div class="stat-header">Characters</div>
-						</div>
-						<div class="stats-values">
-							<div class="stat-value">{executionTime.toFixed(2)} ms</div>
-							<div class="stat-value">{tokensPerSecond}</div>
-							<div class="stat-value">{result.length.toLocaleString()}</div>
-						</div>
-					</div>
-				{/if}
-			</div>
+<div class="flex h-screen flex-col justify-center">
+	<main id="try" class="p-8 text-center text-white">
+		<div class="mb-8">
+			<h1 class="mb-2 text-4xl font-bold text-[#00add8]">Try it yourself</h1>
+			<p class="text-lg text-gray-400">Test Resrap's power directly in your browser</p>
 		</div>
-	{/if}
-</main>
 
-<style>
-	main {
-		padding: 20px;
-		font-family: sans-serif;
-	}
+		{#if status === 'loading'}
+			<div class="flex h-96 items-center justify-center">
+				<div class="flex items-center gap-3">
+					<div
+						class="h-8 w-8 animate-spin rounded-full border-2 border-[#00add8] border-t-transparent"
+					></div>
+					<span class="text-xl text-gray-300">Loading engine...</span>
+				</div>
+			</div>
+		{:else if status === 'error'}
+			<div class="flex h-96 items-center justify-center">
+				<div class="text-center">
+					<div class="mb-4 text-4xl">❌</div>
+					<span class="text-xl text-red-400">Failed to load WASM engine</span>
+				</div>
+			</div>
+		{/if}
 
-	.subtitle {
-		color: #666;
-		font-style: italic;
-		margin-bottom: 20px;
-	}
+		{#if status === 'ready'}
+			<div class="flex h-full flex-col gap-8 lg:flex-row">
+				<!-- Left Side: Grammar & Controls -->
+				<div class="flex flex-1 flex-col gap-4">
+					<div class="flex flex-col gap-2">
+						<label class="text-lg font-semibold text-gray-300">ABNF Grammar</label>
+						<textarea
+							spellcheck="false"
+							bind:value={grammar}
+							rows="16"
+							class="w-full resize-y rounded-lg border border-gray-600 bg-gray-900 p-4 font-mono text-sm text-gray-100 focus:border-[#00add8] focus:ring-1 focus:ring-[#00add8] focus:outline-none"
+							placeholder="Enter your grammar here..."
+						/>
+					</div>
 
-	.container {
-		display: flex;
-		gap: 20px;
-		margin-top: 20px;
-	}
+					<!-- Controls -->
+					<div class="flex flex-col gap-3">
+						<div class="grid grid-cols-1 gap-3 md:grid-cols-3">
+							<div class="flex flex-col gap-1">
+								<label class="text-sm text-gray-400">Start Point</label>
+								<input
+									bind:value={startpoint}
+									type="text"
+									class="w-full rounded-md border border-gray-600 bg-gray-900 p-3 font-mono text-sm text-gray-100 focus:border-[#00add8] focus:ring-1 focus:ring-[#00add8] focus:outline-none"
+									placeholder="program"
+								/>
+							</div>
+							<div class="flex flex-col gap-1">
+								<label class="text-sm text-gray-400"
+									>Seed <span class="text-xs">(0 = random)</span></label
+								>
+								<input
+									bind:value={seed}
+									type="number"
+									class="w-full rounded-md border border-gray-600 bg-gray-900 p-3 font-mono text-sm text-gray-100 focus:border-[#00add8] focus:ring-1 focus:ring-[#00add8] focus:outline-none"
+									placeholder="0"
+								/>
+							</div>
+							<div class="flex flex-col gap-1">
+								<label class="text-sm text-gray-400">Token Length</label>
+								<input
+									bind:value={tokenlen}
+									type="number"
+									class="w-full rounded-md border border-gray-600 bg-gray-900 p-3 font-mono text-sm text-gray-100 focus:border-[#00add8] focus:ring-1 focus:ring-[#00add8] focus:outline-none"
+									placeholder="150"
+								/>
+							</div>
+						</div>
 
-	.left-panel {
-		flex: 1;
-		display: flex;
-		flex-direction: column;
-		gap: 12px;
-	}
+						<button
+							on:click={callGenerateText}
+							disabled={isGenerating}
+							class="flex items-center justify-center gap-2 rounded-lg bg-[#00add8] px-6 py-4 font-semibold text-white transition-all duration-200 hover:bg-[#0099c7] disabled:cursor-not-allowed disabled:bg-gray-600"
+						>
+							{#if isGenerating}
+								<div
+									class="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent"
+								></div>
+								Generating...
+							{:else}
+								<svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+									<path d="M13 10V3L4 14h7v7l9-11h-7z" />
+								</svg>
+								Generate Text
+							{/if}
+						</button>
+					</div>
+				</div>
 
-	.right-panel {
-		flex: 1;
-		display: flex;
-		flex-direction: column;
-		gap: 12px;
-	}
+				<!-- Right Side: Output & Stats -->
+				<div class="flex flex-1 flex-col gap-4">
+					<div class="flex flex-col gap-2">
+						<label class="text-lg font-semibold text-gray-300">Generated Output</label>
+						<div class="relative flex-1">
+							<textarea
+								readonly
+								value={result}
+								rows="16"
+								class="h-full w-full resize-none rounded-lg border border-gray-600 bg-gray-900 p-4 font-mono text-sm text-gray-100 focus:outline-none"
+								placeholder="Generated text will appear here..."
+							/>
+							{#if !result && !isGenerating}
+								<div class="absolute inset-0 flex items-center justify-center text-gray-500">
+									<div class="text-center">
+										<div class="mb-2 text-3xl">⚡</div>
+										<p>Click Generate to see results</p>
+									</div>
+								</div>
+							{/if}
+						</div>
+					</div>
 
-	.small-inputs {
-		display: flex;
-		gap: 12px;
-	}
+					<!-- Performance Stats -->
+					{#if result && !isGenerating}
+						<div class="rounded-lg border border-gray-600 bg-gray-900 p-4">
+							<div class="mb-3 flex items-center gap-2">
+								<svg class="h-4 w-4 text-[#00add8]" fill="currentColor" viewBox="0 0 24 24">
+									<path
+										d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"
+									/>
+								</svg>
+								<span class="text-sm font-medium text-[#00add8]">Performance Metrics</span>
+								<div class="h-px flex-1 bg-gray-700"></div>
+							</div>
 
-	.input-group {
-		flex: 1;
-		display: flex;
-		flex-direction: column;
-		gap: 4px;
-	}
+							<div class="grid grid-cols-3 gap-4">
+								<div class="text-center">
+									<div class="mb-1 text-xs text-gray-400">Execution Time</div>
+									<div class="font-mono text-lg font-bold text-white">
+										{executionTime.toFixed(2)}<span class="text-sm text-gray-400">ms</span>
+									</div>
+								</div>
+								<div class="text-center">
+									<div class="mb-1 text-xs text-gray-400">Throughput</div>
+									<div class="font-mono text-lg font-bold text-[#00add8]">
+										{tokensPerSecond}<span class="text-sm text-gray-400">k/s</span>
+									</div>
+								</div>
+								<div class="text-center">
+									<div class="mb-1 text-xs text-gray-400">Output Size</div>
+									<div class="font-mono text-lg font-bold text-white">
+										{result.length.toLocaleString()}<span class="text-sm text-gray-400">
+											chars</span
+										>
+									</div>
+								</div>
+							</div>
 
-	.input-group label {
-		font-size: 12px;
-	}
-
-	.output-section {
-		display: flex;
-		flex-direction: column;
-		gap: 8px;
-	}
-
-	.stats {
-		background: #f8f9fa;
-		border: 1px solid #e9ecef;
-		border-radius: 8px;
-		padding: 16px;
-		margin-top: 8px;
-	}
-
-	.stats h3 {
-		margin: 0 0 12px 0;
-		font-size: 14px;
-		font-weight: bold;
-		color: #333;
-	}
-
-	.stats-headers {
-		display: flex;
-		gap: 20px;
-		margin-bottom: 8px;
-	}
-
-	.stats-values {
-		display: flex;
-		gap: 20px;
-	}
-
-	.stat-header {
-		flex: 1;
-		font-size: 12px;
-		color: #666;
-		font-weight: 500;
-		text-align: center;
-	}
-
-	.stat-value {
-		flex: 1;
-		font-size: 12px;
-		font-weight: bold;
-		color: #333;
-		font-family: monospace;
-		text-align: center;
-	}
-
-	label {
-		font-weight: bold;
-	}
-
-	textarea,
-	input {
-		padding: 8px;
-		border: 1px solid #ccc;
-		border-radius: 6px;
-		font-size: 14px;
-		width: 100%;
-		box-sizing: border-box;
-		font-family: monospace;
-	}
-
-	textarea {
-		resize: vertical;
-	}
-
-	button {
-		background: #007acc;
-		color: white;
-		border: none;
-		padding: 10px;
-		border-radius: 6px;
-		cursor: pointer;
-		font-weight: bold;
-		transition: background-color 0.2s;
-	}
-
-	button:hover:not(:disabled) {
-		background: #005a9e;
-	}
-
-	button:disabled {
-		background: #ccc;
-		cursor: not-allowed;
-	}
-
-	/* Responsive adjustments */
-	@media (max-width: 768px) {
-		.container {
-			flex-direction: column;
-		}
-
-		.stats-headers,
-		.stats-values {
-			flex-direction: column;
-			gap: 8px;
-		}
-
-		.stat-header,
-		.stat-value {
-			text-align: left;
-		}
-
-		.small-inputs {
-			flex-direction: column;
-		}
-	}
-</style>
+							<div class="mt-3 border-t border-gray-700 pt-3">
+								<div class="text-center text-xs text-gray-500">
+									🚀 Powered by Go WASM running in your browser
+								</div>
+							</div>
+						</div>
+					{/if}
+				</div>
+			</div>
+		{/if}
+	</main>
+</div>

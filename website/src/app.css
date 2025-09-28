@@ -1,1 +1,27 @@
 @import 'tailwindcss';
+
+.codefont {
+	font-family: 'JetBrains Mono', monospace;
+	font-optical-sizing: auto;
+	font-weight: 400;
+	font-style: normal;
+}
+
+.headfont {
+	font-family: 'Inter', sans-serif;
+	font-optical-sizing: auto;
+	font-weight: 700;
+	font-style: normal;
+}
+
+.code-layer pre,
+.code-layer code,
+.code-layer {
+	margin: 0 !important;
+	padding: 0 !important;
+	font-family: monospace !important;
+	font-size: 2.25rem !important; /* same as text-4xl */
+	line-height: 1.4 !important; /* same as leading-snug */
+	tab-size: 4 !important;
+	white-space: pre !important;
+}
