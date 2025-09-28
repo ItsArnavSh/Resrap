@@ -3,35 +3,19 @@
 	const pkgUrl = 'https://pkg.go.dev/github.com/osdc/resrap';
 </script>
 
-<div class="ml-10 flex h-screen flex-col justify-between p-8 text-white">
+<div class="flex h-screen flex-col justify-between p-8 text-white">
 	<!-- Main Content -->
 	<div class="flex flex-1 flex-col justify-center">
 		<!-- Title Section -->
 		<div class="mb-12">
-			<h1 class="mb-4 text-6xl leading-tight font-bold text-[#00add8]">Resrap</h1>
-			<p class="mb-6 text-2xl text-gray-300">A parser...in reverse</p>
+			<h1 class="headfont mb-4 text-6xl leading-tight font-bold text-[#00add8]">Resrap</h1>
+			<p class="headfont mb-6 text-3xl text-gray-300">A parser...but in reverse</p>
 			<div class="max-w-lg space-y-3 text-lg leading-relaxed text-gray-400">
-				<p class="font-medium text-gray-300">
-					Generate Infinitely Long Procedurally Generated Code from grammar
+				<p class="codefont font-medium text-gray-300">
+					Generate infinitely long procedurally generated code with just a basic grammar, suitable
+					for stress testing linters and parsers, generating realistic sample non copyrighted code
+					for display, or just for playing around with grammar theory
 				</p>
-				<div class="grid grid-cols-2 gap-x-4 gap-y-2 text-base">
-					<div class="flex items-center gap-2">
-						<div class="h-1.5 w-1.5 rounded-full bg-[#00add8]"></div>
-						<span>Supports Infinite Generation</span>
-					</div>
-					<div class="flex items-center gap-2">
-						<div class="h-1.5 w-1.5 rounded-full bg-[#00add8]"></div>
-						<span>Multithread support</span>
-					</div>
-					<div class="flex items-center gap-2">
-						<div class="h-1.5 w-1.5 rounded-full bg-[#00add8]"></div>
-						<span>Flexible API</span>
-					</div>
-					<div class="flex items-center gap-2">
-						<div class="h-1.5 w-1.5 rounded-full bg-[#00add8]"></div>
-						<span>Millions of tokens in seconds</span>
-					</div>
-				</div>
 			</div>
 		</div>
 
