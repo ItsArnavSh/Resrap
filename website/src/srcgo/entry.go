@@ -3,10 +3,13 @@ package main
 import (
 	"fmt"
 	"syscall/js"
+
+	"github.com/osdc/resrap/resrap"
 )
 
 func main() {
 	println("Go WASM: Starting with Go 1.24.4...")
+	par := resrap.NewResrap()
 
 	// Your custom function
 	js.Global().Set("generateText", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
@@ -19,17 +22,12 @@ func main() {
 		seed := args[2].Int()
 		tokenlen := args[3].Int()
 
-		println("Go WASM: generateText called with:")
-		println("  grammar:", grammar)
-		println("  startpoint:", startpoint)
-		println("  seed:", seed)
-		println("  tokenlen:", tokenlen)
+		par.ParseGrammar("sample", grammar)
 
+		res := par.GenerateWithSeeded("sample", startpoint, uint64(seed), tokenlen)
 		// Your logic here - for now just returning a formatted string
-		result := fmt.Sprintf("Generated text with grammar='%s', startpoint='%s', seed=%d, tokenlen=%d",
-			grammar, startpoint, seed, tokenlen)
-
-		println("Go WASM: returning:", result)
+		result := res
+		fmt.Println(res)
 		return result
 	}))
 
