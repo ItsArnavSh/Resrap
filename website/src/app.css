@@ -20,8 +20,26 @@
 	margin: 0 !important;
 	padding: 0 !important;
 	font-family: monospace !important;
-	font-size: 2.25rem !important; /* same as text-4xl */
-	line-height: 1.4 !important; /* same as leading-snug */
+	font-size: 1.5rem !important;
+	line-height: 1.4 !important;
 	tab-size: 4 !important;
 	white-space: pre !important;
+}
+
+@media (min-width: 1024px) {
+	.code-layer pre,
+	.code-layer code,
+	.code-layer {
+		font-size: 2.25rem !important;
+	}
+}
+
+@media (max-width: 640px) {
+	.code-layer pre,
+	.code-layer code,
+	.code-layer {
+		font-size: 1rem !important;
+		white-space: pre-wrap !important;
+		word-break: break-all !important;
+	}
 }

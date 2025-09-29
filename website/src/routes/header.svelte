@@ -3,14 +3,12 @@
 	const pkgUrl = 'https://pkg.go.dev/github.com/osdc/resrap';
 </script>
 
-<div class="flex h-screen flex-col justify-between p-8 text-white">
-	<!-- Main Content -->
+<div class="flex flex-col justify-between p-4 lg:p-8 text-white h-auto lg:min-h-screen">
 	<div class="flex flex-1 flex-col justify-center">
-		<!-- Title Section -->
-		<div class="mb-12">
-			<h1 class="headfont mb-4 text-6xl leading-tight font-bold text-[#00add8]">Resrap</h1>
-			<p class="headfont mb-6 text-3xl text-gray-300">A parser...but in reverse</p>
-			<div class="max-w-lg space-y-3 text-lg leading-relaxed text-gray-400">
+		<div class="mb-8 lg:mb-12">
+			<h1 class="headfont mb-2 lg:mb-4 text-3xl lg:text-6xl leading-tight font-bold text-[#00add8]">Resrap</h1>
+			<p class="headfont mb-4 lg:mb-6 text-xl lg:text-3xl text-gray-300">A parser...but in reverse</p>
+			<div class="max-w-lg space-y-3 text-base lg:text-lg leading-relaxed text-gray-400">
 				<p class="codefont font-medium text-gray-300">
 					Generate infinitely long procedurally generated code with just a basic grammar, suitable
 					for stress testing linters and parsers, generating realistic sample non copyrighted code
@@ -19,13 +17,12 @@
 			</div>
 		</div>
 
-		<!-- Action Buttons -->
-		<div class="mb-8 flex gap-4">
+		<div class="mb-6 lg:mb-8 flex flex-col sm:flex-row gap-3 lg:gap-4">
 			<a
 				href={githubUrl}
 				target="_blank"
 				rel="noopener noreferrer"
-				class="flex items-center gap-2 rounded-lg bg-[#00add8] px-6 py-3 font-semibold text-white transition-colors duration-200 hover:bg-[#0099c7]"
+				class="flex items-center justify-center gap-2 rounded-lg bg-[#00add8] px-4 lg:px-6 py-3 font-semibold text-white transition-colors duration-200 hover:bg-[#0099c7]"
 			>
 				<svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
 					<path
@@ -36,7 +33,7 @@
 			</a>
 			<a
 				href="#try"
-				class="flex items-center gap-2 rounded-lg border-2 border-[#00add8] px-6 py-3 font-semibold text-[#00add8] transition-all duration-200 hover:bg-[#00add8] hover:text-white"
+				class="flex items-center justify-center gap-2 rounded-lg border-2 border-[#00add8] px-4 lg:px-6 py-3 font-semibold text-[#00add8] transition-all duration-200 hover:bg-[#00add8] hover:text-white"
 			>
 				<svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
 					<path d="M8 5V16L12 13L16 16V5H8Z" />
@@ -46,8 +43,7 @@
 		</div>
 	</div>
 
-	<!-- Footer Links -->
-	<div class="flex flex-col gap-3">
+	<div class="flex flex-col gap-2 lg:gap-3 mt-8 lg:mt-0">
 		<a
 			href={githubUrl}
 			target="_blank"

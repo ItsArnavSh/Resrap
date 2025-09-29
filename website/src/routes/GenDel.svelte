@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import { loadWasm } from '$lib/wasm.js';
 	import { samplegrammer } from '$lib/template';
@@ -6,23 +6,22 @@
 	import materialPalenight from 'svelte-highlight/styles/material-palenight';
 	import c from 'svelte-highlight/languages/c';
 	import Highlight from 'svelte-highlight';
+
 	let displayText = '';
-	let status = 'loading'; // 'loading' | 'ready' | 'error'
+	let status: 'loading' | 'ready' | 'error' = 'loading';
 	let isGenerating = false;
 	let isTyping = false;
 
-	// Form inputs (fixed for demo)
 	let grammar = samplegrammer;
 	let startpoint = 'program';
-	let tokenlen = 150; // Smaller for demo
+	let tokenlen = 150;
 
-	// Stats
 	let executionTime = 0;
 	let tokensGenerated = 0;
 	let generationCount = 0;
 
-	let generateInterval;
-	let typeInterval;
+	let generateInterval: NodeJS.Timeout | undefined;
+	let typeInterval: NodeJS.Timeout | undefined;
 	let currentGeneratedText = '';
 	let typeIndex = 0;
 
@@ -53,14 +52,11 @@
 		isGenerating = true;
 		generationCount++;
 
-		// High-resolution time measurement
 		const startTime = performance.now();
 
 		try {
-			// Use seed 0 for random generation each time
 			currentGeneratedText = globalThis.generateText(grammar, startpoint, 0, tokenlen);
 
-			// Calculate stats
 			const endTime = performance.now();
 			executionTime = endTime - startTime;
 			tokensGenerated = currentGeneratedText
@@ -68,12 +64,11 @@
 				.split(/\s+/)
 				.filter((token) => token.length > 0).length;
 
-			// Clear display and start typing animation
 			displayText = '';
 			typeIndex = 0;
 			startTypingAnimation();
 		} catch (error) {
-			currentGeneratedText = '❌ Error generating text: ' + error.message;
+			currentGeneratedText = '❌ Error generating text: ' + (error as Error).message;
 			displayText = currentGeneratedText;
 			executionTime = 0;
 			tokensGenerated = 0;
@@ -89,11 +84,10 @@
 				displayText += currentGeneratedText[typeIndex];
 				typeIndex++;
 			} else {
-				// Typing complete
-				clearInterval(typeInterval);
+				if (typeInterval) clearInterval(typeInterval);
 				isTyping = false;
 			}
-		}, 15); // Type every 15ms for fast typing effect
+		}, 15);
 	}
 
 	// Calculate tokens per second
@@ -104,60 +98,58 @@
 <svelte:head>
 	{@html materialPalenight}
 </svelte:head>
-<div class="flex h-screen flex-col p-8 pt-20 pb-20 text-white">
+<div class="flex flex-col p-4 lg:p-8 pt-8 lg:pt-20 pb-8 lg:pb-20 text-white h-auto lg:min-h-screen">
 	{#if status === 'loading'}
-		<div class="flex h-full items-center justify-center">
+		<div class="flex h-96 items-center justify-center">
 			<div class="flex items-center gap-3">
 				<div
 					class="h-8 w-8 animate-spin rounded-full border-2 border-[#00add8] border-t-transparent"
 				></div>
-				<span class="text-xl text-gray-300">Loading Resrap engine...</span>
+				<span class="text-lg lg:text-xl text-gray-300">Loading Resrap engine...</span>
 			</div>
 		</div>
 	{:else if status === 'error'}
-		<div class="flex h-full items-center justify-center">
+		<div class="flex h-96 items-center justify-center">
 			<div class="text-center">
 				<div class="mb-4 text-4xl">❌</div>
-				<span class="text-xl text-red-400">Failed to load Resrap engine</span>
+				<span class="text-lg lg:text-xl text-red-400">Failed to load Resrap engine</span>
 			</div>
 		</div>
 	{/if}
 
 	{#if status === 'ready'}
-		<div class="flex h-full flex-col">
-			<!-- Output Display -->
-			<div class="flex flex-1 flex-col">
+		<div class="flex flex-col">
+			<div class="flex flex-col">
 				<div
-					class="relative flex-1 overflow-hidden rounded-lg border border-gray-700 bg-[#292d3e] p-6"
+					class="relative h-96 lg:h-[32rem] overflow-hidden rounded-lg border border-gray-700 bg-[#292d3e] p-3 lg:p-6"
 				>
 					<div
-						class="h-full overflow-y-auto font-mono text-sm leading-relaxed whitespace-pre-wrap text-gray-100"
+						class="h-full overflow-y-auto font-mono text-xs lg:text-sm leading-relaxed whitespace-pre-wrap text-gray-100"
 					>
-						<div class="overflow-x-hidden">
+						<div class="overflow-x-auto">
 							<Highlight language={c} code={displayText} />
 						</div>
 						{#if isTyping}
-							<span class="ml-1 inline-block h-5 w-2 animate-pulse bg-[#00add8]"></span>
+							<span class="ml-1 inline-block h-4 lg:h-5 w-2 animate-pulse bg-[#00add8]"></span>
 						{/if}
 					</div>
 
 					{#if displayText.length === 0 && !isTyping}
 						<div class="absolute inset-0 flex items-center justify-center text-gray-500">
 							<div class="text-center">
-								<div class="mb-2 text-4xl">⚡</div>
-								<p>Waiting for generation...</p>
+								<div class="mb-2 text-3xl lg:text-4xl">⚡</div>
+								<p class="text-sm lg:text-base">Waiting for generation...</p>
 							</div>
 						</div>
 					{/if}
 				</div>
 
-				<!-- Footer Info -->
-				<div class="mt-4 flex items-center justify-between text-sm text-gray-400">
-					<div class="flex gap-4">
+				<div class="mt-3 lg:mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 lg:gap-0 text-xs lg:text-sm text-gray-400">
+					<div class="flex gap-3 lg:gap-4">
 						<span>{displayText.length.toLocaleString()} chars</span>
 						<span>{tokensGenerated} tokens</span>
 					</div>
-					<div class="flex gap-4">
+					<div class="flex gap-3 lg:gap-4">
 						<span>{tokensPerSecond}k tokens/sec</span>
 						<span>{executionTime.toFixed(1)}ms</span>
 					</div>
