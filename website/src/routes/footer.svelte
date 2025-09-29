@@ -5,12 +5,11 @@
 	const osdcWebUrl = 'https://osdc.dev';
 </script>
 
-<footer class="bg-black px-8 py-12 text-white">
+<footer class="bg-black px-4 lg:px-8 py-8 lg:py-12 text-white">
 	<div class="mx-auto max-w-4xl text-center">
-		<!-- Main Message -->
-		<div class="mb-8">
-			<p class="mb-2 text-2xl text-gray-200">
-				Made with <span class="text-2xl text-red-500">♥</span> by
+		<div class="mb-6 lg:mb-8">
+			<p class="mb-2 text-lg lg:text-2xl text-gray-200">
+				Made with <span class="text-lg lg:text-2xl text-red-500">♥</span> by
 				<a
 					href="https://github.com/itsarnavsh"
 					target="_blank"
@@ -20,11 +19,10 @@
 					Arnav
 				</a>
 			</p>
-			<p class="text-sm text-gray-400">© 2025 OSDC Organization</p>
+			<p class="text-xs lg:text-sm text-gray-400">© 2025 OSDC Organization</p>
 		</div>
 
-		<!-- Links -->
-		<div class="flex flex-wrap justify-center gap-6 text-sm">
+		<div class="flex flex-wrap justify-center gap-4 lg:gap-6 text-xs lg:text-sm">
 			<a
 				href={githubUrl}
 				target="_blank"
