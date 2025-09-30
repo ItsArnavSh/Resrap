@@ -12,10 +12,20 @@ type nextoption struct {
 	node        *syntaxNode
 	probability float32
 }
+type NodeType int8
+
+const (
+	start NodeType = iota
+	jump
+	end
+	pointer
+)
+
 type syntaxNode struct {
-	next []nextoption
-	cf   []float32
-	name string
+	next []nextoption //All options from here
+	cf   []float32    //Cumulative frequency of all the options
+	id   uint32       //The id of the node
+	typ  NodeType
 }
 
 func (s *syntaxNode) AddEdgeNext(g *syntaxGraph, node *syntaxNode, probability float32) {
@@ -29,7 +39,7 @@ type syntaxGraph struct {
 	prng    prng
 }
 
-func (s *syntaxGraph) GetNode(name string) *syntaxNode {
+func (s *syntaxGraph) GetNode(name string, id string) *syntaxNode {
 	if s.nodeRef[name] != nil {
 		return s.nodeRef[name]
 	}
