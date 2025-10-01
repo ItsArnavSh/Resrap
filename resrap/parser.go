@@ -19,6 +19,7 @@ type parser struct {
 	errors       []error
 	index        int
 	graph        syntaxGraph
+	regexhandler regexer
 }
 
 func new_parser() parser {
@@ -35,6 +36,7 @@ func new_parser() parser {
 		tokens:       []token{},
 		errors:       []error{},
 		graph:        newSyntaxGraph(),
+		regexhandler: newRegexer(),
 	}
 }
 
@@ -129,6 +131,7 @@ func (i *parser) parse_rules(root uint32, isDeep bool) (*syntaxNode, *syntaxNode
 				leafnode = i.graph.GetNode(index, ch)
 			} else {
 				leafnode = i.graph.GetNode(index, rx)
+				i.regexhandler.CacheRegex(i.curr().text)
 			}
 			bufferNode.AddEdgeNext(&i.graph, leafnode, i.get_probability())
 			jumpNode := i.graph.GetNode(i.get_func_ptr(), jump)

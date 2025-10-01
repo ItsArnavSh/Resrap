@@ -1,7 +1,6 @@
 package resrap
 
 import (
-	"fmt"
 	"sort"
 	"strings"
 
@@ -40,10 +39,11 @@ func (s *syntaxNode) AddEdgeNext(g *syntaxGraph, node *syntaxNode, probability f
 }
 
 type syntaxGraph struct {
-	nodeRef map[uint32]*syntaxNode
-	namemap map[string]uint32
-	charmap map[uint32]string
-	prng    prng
+	nodeRef      map[uint32]*syntaxNode
+	namemap      map[string]uint32
+	charmap      map[uint32]string
+	regexhandler regexer
+	prng         prng
 }
 
 func (s *syntaxGraph) GetNode(id uint32, typ nodeType) *syntaxNode {
@@ -109,10 +109,7 @@ func (s *syntaxGraph) GraphWalk(prng *prng, start string, tokens int) string {
 			printedTokens++
 			result.WriteString(unescaped)
 		} else if current.typ == rx {
-			chars, err := parseCharClass(prng, "["+s.charmap[current.id]+"]")
-			if err == nil && len(chars) > 0 {
-				result.WriteString(chars[prng.RandomInt(0, len(chars))])
-			}
+			result.WriteString(s.regexhandler.GenerateString(s.charmap[current.id], prng))
 		} else if current.typ == pointer {
 			jumpStack.Push(current.next[0].node.id)
 			current = s.GetNode(current.pointer, header)
@@ -179,58 +176,4 @@ func unescapeString(s string) string {
 		}
 	}
 	return string(result)
-}
-
-// Predefined word list for alphanumeric patterns
-var wordList = []string{
-	"hello", "world", "test", "code", "function", "variable", "class", "method",
-	"data", "user", "admin", "login", "password", "email", "server", "client",
-	"database", "table", "query", "result", "error", "success", "failure", "debug",
-}
-
-func parseCharClass(prng *prng, charClass string) ([]string, error) {
-	if len(charClass) < 2 || charClass[0] != '[' || charClass[len(charClass)-1] != ']' {
-		return nil, fmt.Errorf("invalid format: %s", charClass)
-	}
-
-	content := charClass[1 : len(charClass)-1]
-
-	// Check for common regex patterns
-	switch content {
-	case "0-9", "\\d":
-		// Random number string
-		numbers := []string{"42", "123", "7", "999", "256", "1024", "88", "13", "77", "101"}
-		idx := prng.RandomInt(0, len(numbers))
-		return []string{numbers[idx]}, nil
-
-	case "a-zA-Z0-9", "\\w", "a-zA-Z", "A-Z", "a-z":
-		// Random word from predefined list
-		idx := prng.RandomInt(0, len(wordList))
-		return []string{wordList[idx]}, nil
-	}
-
-	// Fall back to original character range expansion
-	var chars []string
-	runes := []rune(content)
-	for i := 0; i < len(runes); i++ {
-		if i+2 < len(runes) && runes[i+1] == '-' { // range like a-z
-			start, end := runes[i], runes[i+2]
-			if start > end {
-				return nil, fmt.Errorf("invalid range %c-%c", start, end)
-			}
-			for r := start; r <= end; r++ {
-				chars = append(chars, string(r))
-			}
-			i += 2 // skip past range
-		} else {
-			chars = append(chars, string(runes[i]))
-		}
-	}
-
-	// Pick one random char from expanded set
-	if len(chars) == 0 {
-		return nil, fmt.Errorf("empty char class: %s", charClass)
-	}
-	idx := prng.RandomInt(0, len(chars))
-	return []string{chars[idx]}, nil
 }
