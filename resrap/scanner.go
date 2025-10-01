@@ -72,12 +72,7 @@ func (s *scanner) scanDelimited(open, close rune, allowEscapes bool) (string, *S
 		if r == close {
 			return buf, nil
 		}
-		if r == ';' && !allowEscapes {
-			// if you want the exact `\;` escape rule, check previous rune
-			if len(buf) == 0 || buf[len(buf)-1] != '\\' {
-				return "", &ScanError{s.pos - 1, fmt.Sprintf("unexpected ';' in %q", string(open))}
-			}
-		}
+
 		buf += string(r)
 	}
 }

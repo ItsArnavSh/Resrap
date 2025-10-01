@@ -104,6 +104,7 @@ func (g *graphbuilder) generate_graph() error {
 	g.pars.tokens = tokens
 	g.pars.graph.charmap = g.pars.charmap
 	g.pars.graph.namemap = g.pars.name_map
+	g.pars.graph.regexhandler = g.pars.regexhandler
 	g.pars.parse_grammar()
 
 	var all []error
