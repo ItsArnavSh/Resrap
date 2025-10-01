@@ -44,3 +44,33 @@ func ParseFile(filename string) ([]string, error) {
 
 	return statements, nil
 }
+
+type lang struct {
+	graph *syntaxGraph
+	nodes int
+}
+
+func newLang() lang {
+	return lang{}
+}
+func (l *lang) GetGraph() *syntaxGraph {
+	return l.graph
+}
+func (l *lang) ParserFile(filename string) error {
+	lines, err := ParseFile(filename)
+	if err != nil {
+		return err
+	}
+	gb := newGraphBuilder()
+	content := strings.Join(lines, "")
+	err = gb.start_generation(content)
+	l.graph = &gb.pars.graph
+	return err
+}
+
+func (l *lang) ParserString(data string) error {
+	gb := newGraphBuilder()
+	err := gb.start_generation(data)
+	l.graph = &gb.pars.graph
+	return err
+}

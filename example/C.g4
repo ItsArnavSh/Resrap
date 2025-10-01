@@ -11,7 +11,7 @@ conditionalexpone: (operand conditionaloperation operand);
 conditionaloperation: ' < ' | ' > ';
 conditionaljoin: ' && ' | ' || ';
 statement:assignment;
-assignment: datatype ' ' identifier ' = ' expression ';\n';
+assignment: datatype ' ' identifier ' = ' expression '\;\n';
 expression: operand (operator (operand | '(' expression ')'))*;
 operand: identifier | integer | float;
 operator : ' + ' | ' - ' | ' * ' | ' / ';

@@ -12,35 +12,52 @@ type nextoption struct {
 	node        *syntaxNode
 	probability float32
 }
+type NodeType int8
+
+const (
+	start NodeType = iota
+	header
+	jump
+	end
+	ch
+	rx
+	pointer
+	idk
+)
+
 type syntaxNode struct {
-	next []nextoption
-	cf   []float32
-	name string
+	next    []nextoption //All options from here
+	cf      []float32    //Cumulative frequency of all the options
+	id      uint32       //The id of the node
+	typ     NodeType
+	pointer uint32 //In case its a pointer type
 }
 
 func (s *syntaxNode) AddEdgeNext(g *syntaxGraph, node *syntaxNode, probability float32) {
 	newNode := nextoption{node: node, probability: probability}
 	s.next = append(s.next, newNode)
-	g.nodeRef[node.name] = node
+	g.nodeRef[node.id] = node
 }
 
 type syntaxGraph struct {
-	nodeRef map[string]*syntaxNode
+	nodeRef map[uint32]*syntaxNode
+	namemap map[string]uint32
+	charmap map[uint32]string
 	prng    prng
 }
 
-func (s *syntaxGraph) GetNode(name string) *syntaxNode {
-	if s.nodeRef[name] != nil {
-		return s.nodeRef[name]
+func (s *syntaxGraph) GetNode(id uint32, typ NodeType) *syntaxNode {
+	if s.nodeRef[id] != nil {
+		return s.nodeRef[id]
 	}
-	newNode := &syntaxNode{nil, nil, name}
-	s.nodeRef[name] = newNode
+	newNode := &syntaxNode{nil, nil, id, typ, 0}
+	s.nodeRef[id] = newNode
 	return newNode
 }
 
-func NewSyntaxGraph() syntaxGraph {
+func newSyntaxGraph() syntaxGraph {
 	return syntaxGraph{
-		nodeRef: make(map[string]*syntaxNode),
+		nodeRef: make(map[uint32]*syntaxNode),
 	}
 }
 func (s *syntaxGraph) Normalize() {
@@ -73,7 +90,7 @@ func (s *syntaxGraph) Normalize() {
 func (s *syntaxGraph) GraphWalk(prng *prng, start string, tokens int) string {
 	var result strings.Builder
 	jumpStack := stack.New()
-	startingNode := s.nodeRef[start]
+	startingNode := s.nodeRef[s.namemap[start]]
 	if startingNode == nil {
 		return ""
 	}
@@ -84,35 +101,34 @@ func (s *syntaxGraph) GraphWalk(prng *prng, start string, tokens int) string {
 			return result.String()
 		}
 		// Process logic only if name starts with ' or [
-		if len(current.name) > 0 {
-			if strings.HasPrefix(current.name, "~:{'") {
-				// Extract content between quotes and handle escape sequences
-				content := current.name[4:strings.LastIndex(current.name, "'")]
-				unescaped := unescapeString(content)
-				printedTokens++
-				result.WriteString(unescaped)
-			} else if strings.HasPrefix(current.name, "~:{[") {
-				chars, err := parseCharClass(prng, current.name[3:1+strings.LastIndex(current.name, "]")])
-				if err == nil && len(chars) > 0 {
-					result.WriteString(chars[prng.RandomInt(0, len(chars))])
+
+		if current.typ == ch {
+			// Extract content between quotes and handle escape sequences
+			content := s.charmap[current.id]
+			unescaped := unescapeString(content)
+			printedTokens++
+			result.WriteString(unescaped)
+		} else if current.typ == rx {
+			chars, err := parseCharClass(prng, "["+s.charmap[current.id]+"]")
+			if err == nil && len(chars) > 0 {
+				result.WriteString(chars[prng.RandomInt(0, len(chars))])
+			}
+		} else if current.typ == pointer {
+			jumpStack.Push(current.next[0].node.id)
+			current = s.GetNode(current.pointer, header)
+			continue // Skip the normal next node selection
+		} else if current.typ == end {
+			if jumpStack.Len() != 0 {
+				nameInt := jumpStack.Pop()
+				id, ok := nameInt.(uint32)
+				if !ok {
+					break
 				}
-			} else if strings.HasPrefix(current.name, "~:{") {
-				name := current.name[3:strings.Index(current.name, "}")]
-				jumpStack.Push(current.next[0].node.name)
-				current = s.GetNode(name)
+				current = s.GetNode(id, idk)
 				continue // Skip the normal next node selection
-			} else if current.name == "~:end:~" {
-				if jumpStack.Len() != 0 {
-					nameInt := jumpStack.Pop()
-					name, ok := nameInt.(string)
-					if !ok {
-						break
-					}
-					current = s.GetNode(name)
-					continue // Skip the normal next node selection
-				}
 			}
 		}
+
 		// move to next (randomly selected if multiple options)
 		if len(current.next) > 0 {
 
