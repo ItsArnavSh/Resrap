@@ -1,7 +1,7 @@
 package resrap
 
-// Resrap is the main object of the library.
-// It allows managing multiple language grammars and generating content from them.
+// Resrap is the main accesspoint for singlethreaded uses
+// Pretty Much Collection of graphs which can be generated using parsing grammar
 type Resrap struct {
 	languageGraph map[string]lang
 }
@@ -15,8 +15,8 @@ func NewResrap() *Resrap {
 }
 
 // ParseGrammar parses a grammar string and stores it under the given name.
-// name: a unique identifier for this grammar (e.g., "C").
-// grammar: the grammar definition as a string.
+// name: a unique identifier for this grammar (e.g., "C"), should be in ABNF format(Check osdc/resrap for more info on that).
+// Returns error generated while parsing
 func (r *Resrap) ParseGrammar(name, grammar string) error {
 	lang := newLang()
 	err := lang.ParserString(grammar)
@@ -26,8 +26,9 @@ func (r *Resrap) ParseGrammar(name, grammar string) error {
 }
 
 // ParseGrammarFile parses a grammar from a file and stores it under the given name.
-// name: a unique identifier for this grammar (e.g., "C").
+// name: a unique identifier for this grammar (e.g., "C"), should be in ABNF format(Check osdc/resrap for more info on that).
 // location: path to the grammar file.
+// Returns error generated while parsing
 func (r *Resrap) ParseGrammarFile(name, location string) error {
 	lang := newLang()
 	err := lang.ParserFile(location)
@@ -38,7 +39,7 @@ func (r *Resrap) ParseGrammarFile(name, location string) error {
 }
 
 // GenerateRandom generates content from the grammar identified by 'name'.
-// starting_node: the starting symbol in the grammar for generation.
+// starting_node: the starting heading in the grammar for generation.
 // Returns a string containing the generated content.
 // The generation is non-deterministic (random).
 func (r *Resrap) GenerateRandom(name, starting_node string, tokens int) string {

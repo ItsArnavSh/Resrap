@@ -13,10 +13,10 @@ type scanner struct {
 	width  int // width of last rune
 	currR  rune
 	lineno int
-	tokens []Token
+	tokens []token
 }
 
-func extracttokens(inp string) ([]Token, []ScanError) {
+func extracttokens(inp string) ([]token, []ScanError) {
 	sc := scanner{}
 	sc.Input = inp
 	return sc.scan()
@@ -110,34 +110,34 @@ func (s *scanner) scanIdentifier() string {
 	}
 	return buf
 }
-func (s *scanner) scan() ([]Token, []ScanError) {
+func (s *scanner) scan() ([]token, []ScanError) {
 	var errs []ScanError
 	for s.next() != -1 {
 		switch s.currR {
 		case '+':
-			s.tokens = append(s.tokens, Token{0, oneormore, ""})
+			s.tokens = append(s.tokens, token{0, oneormore, ""})
 		case '*':
-			s.tokens = append(s.tokens, Token{0, anyno, ""})
+			s.tokens = append(s.tokens, token{0, anyno, ""})
 		case '^':
-			s.tokens = append(s.tokens, Token{0, infinite, ""})
+			s.tokens = append(s.tokens, token{0, infinite, ""})
 		case '?':
-			s.tokens = append(s.tokens, Token{0, maybe, ""})
+			s.tokens = append(s.tokens, token{0, maybe, ""})
 		case '|':
-			s.tokens = append(s.tokens, Token{0, option, ""})
+			s.tokens = append(s.tokens, token{0, option, ""})
 		case ';':
-			s.tokens = append(s.tokens, Token{0, padding, ""})
+			s.tokens = append(s.tokens, token{0, padding, ""})
 		case '(':
-			s.tokens = append(s.tokens, Token{0, bracopen, ""})
+			s.tokens = append(s.tokens, token{0, bracopen, ""})
 		case ')':
-			s.tokens = append(s.tokens, Token{0, bracclose, ""})
+			s.tokens = append(s.tokens, token{0, bracclose, ""})
 		case ':':
-			s.tokens = append(s.tokens, Token{0, colon, ""})
+			s.tokens = append(s.tokens, token{0, colon, ""})
 		case '\'':
 			val, err := s.scanDelimited('\'', '\'', false)
 			if err != nil {
 				errs = append(errs, *err)
 			} else {
-				s.tokens = append(s.tokens, Token{0, character, val})
+				s.tokens = append(s.tokens, token{0, character, val})
 			}
 
 		case '<':
@@ -145,7 +145,7 @@ func (s *scanner) scan() ([]Token, []ScanError) {
 			if err != nil {
 				errs = append(errs, *err)
 			} else {
-				s.tokens = append(s.tokens, Token{0, probability, val})
+				s.tokens = append(s.tokens, token{0, probability, val})
 			}
 
 		case '[':
@@ -153,13 +153,13 @@ func (s *scanner) scan() ([]Token, []ScanError) {
 			if err != nil {
 				errs = append(errs, *err)
 			} else {
-				s.tokens = append(s.tokens, Token{0, regex, val})
+				s.tokens = append(s.tokens, token{0, regex, val})
 			}
 		default:
 			if isIdentStart(s.currR) {
 				buff := s.scanIdentifier()
 				if buff != "" {
-					s.tokens = append(s.tokens, Token{0, identifier, buff})
+					s.tokens = append(s.tokens, token{0, identifier, buff})
 				}
 
 			}

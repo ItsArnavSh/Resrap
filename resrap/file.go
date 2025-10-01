@@ -8,7 +8,7 @@ import (
 
 // ParseFile reads a file and returns statements split by lines ending with ';',
 // skipping lines starting with "//".
-func ParseFile(filename string) ([]string, error) {
+func parseFile(filename string) ([]string, error) {
 	file, err := os.Open(filename)
 	if err != nil {
 		return nil, err
@@ -57,7 +57,7 @@ func (l *lang) GetGraph() *syntaxGraph {
 	return l.graph
 }
 func (l *lang) ParserFile(filename string) error {
-	lines, err := ParseFile(filename)
+	lines, err := parseFile(filename)
 	if err != nil {
 		return err
 	}
