@@ -43,21 +43,23 @@ func (r *ResrapMT) GetCodeChannel() chan CodeGenRes {
 // ParseGrammar parses a grammar string and stores it under the given name.
 // name: a unique identifier for this grammar (e.g., "C").
 // grammar: the grammar definition as a string.
-func (r *ResrapMT) ParseGrammar(name, grammar string) {
+func (r *ResrapMT) ParseGrammar(name, grammar string) error {
 	lang := newLang()
-	lang.ParserString(grammar)
+	err := lang.ParserString(grammar)
 	r.languageGraph[name] = lang
 	r.languageGraph[name].graph.Normalize()
+	return err
 }
 
 // ParseGrammarFile parses a grammar from a file and stores it under the given name.
 // name: a unique identifier for this grammar (e.g., "C").
 // location: path to the grammar file.
-func (r *ResrapMT) ParseGrammarFile(name, location string) {
+func (r *ResrapMT) ParseGrammarFile(name, location string) error {
 	lang := newLang()
-	lang.ParserFile(location)
+	err := lang.ParserFile(location)
 	r.languageGraph[name] = lang
 	r.languageGraph[name].graph.Normalize()
+	return err
 }
 
 // GenerateRandom schedules a job to generate content from the grammar identified by 'name'.

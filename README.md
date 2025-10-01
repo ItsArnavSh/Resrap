@@ -68,64 +68,35 @@ go get github.com/ItsArnavSh/Resrap@v0.1.0
 
 ---
 
-## Single-Threaded Usage
+## Usage
 
 ```golang
-package main
 
-import (
-    "fmt"
-    "github.com/ItsArnavSh/Resrap/resrap"
-)
+	//Resrap with Single threaded
+	rs := resrap.NewResrap()
+	err := rs.ParseGrammarFile("C", "example/C.g4")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	code := rs.GenerateRandom("C", "program", 10)
+	fmt.Println(code)
 
-func main() {
-    r := resrap.NewResrap()
-    r.ParseGrammarFile("C", "example/C.g4")
-
-    code := r.GenerateRandom("C", "program", 400)
-    fmt.Println(code)
-
-    seeded := r.GenerateWithSeeded("C", "program", 20, 400) // 20 = seed, 400 tokens
-    fmt.Println(seeded)
-}
-```
-
-* **GenerateRandom** → Random traversal using internal PRNG
-* **GenerateWithSeeded** → Deterministic generation using a fixed seed
-
----
-
-## Multithreaded Usage (ResrapMT)
-
-`ResrapMT` allows **parallel generation** for multiple jobs using a worker pool. This is ideal for **server environments** or **batch processing**.
-
-### Example
-
-```golang
-package main
-
-import (
-    "fmt"
-    "github.com/ItsArnavSh/Resrap/resrap"
-)
-
-func main() {
-    rmt := resrap.NewResrapMT(10, 100) // 10 workers, queue size 100
-    rmt.ParseGrammarFile("C", "example/C.g4")
-    rmt.StartResrap() // spawn worker pool
-
-    // Submit jobs with unique IDs
-    for i := 0; i < 10; i++ {
-        jobID := fmt.Sprintf("job-%d", i)
-        rmt.GenerateRandom(jobID, "C", "program", 100)
-    }
-
-    // Collect results
-    for i := 0; i < 10; i++ {
-        res := <-rmt.CodeChannel
-        fmt.Printf("Job %s generated code: %s\n", res.Id, res.Code[:50])
-    }
-}
+	//Lets get a multithreaded API set up quick
+	r := resrap.NewResrapMT(20, 1000) //20 worker pool and 1000 wait queue max size
+	err = r.ParseGrammarFile("C", "example/C.g4")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	//Receive from this
+	r.StartResrap()
+	defer r.ShutDownResrap()
+	codeChan := r.GetCodeChannel()
+	id := "12321"
+	r.GenerateRandom(id, "C", "program", 10)
+	res := <-codeChan
+	fmt.Println(res.Code)
 ```
 
 ### Notes
@@ -165,4 +136,3 @@ Resrap was created to:
 * Compatible with standard EBNF operators: `+`, `*`, `?`, `()`
 
 See [docs/ABNF.md](docs/ABNF.md) for full syntax and examples.
-
