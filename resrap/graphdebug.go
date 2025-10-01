@@ -167,7 +167,7 @@ func (s *syntaxGraph) PrintDOT() string {
 	return sb.String()
 }
 
-func nodeTypeToString(typ NodeType) string {
+func nodeTypeToString(typ nodeType) string {
 	switch typ {
 	case start:
 		return "START"

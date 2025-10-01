@@ -14,8 +14,8 @@ type parser struct {
 	rev_name_map map[uint32]string  //Help in debugging
 	def_check    map[uint32]bool    //To check if a function exists
 	charmap      map[uint32]string  //To store the print values corresponding to ids
-	inter_rep    map[uint32][]Token //Intermediate Representation
-	tokens       []Token
+	inter_rep    map[uint32][]token //Intermediate Representation
+	tokens       []token
 	errors       []error
 	index        int
 	graph        syntaxGraph
@@ -30,9 +30,9 @@ func new_parser() parser {
 		name_map:     make(map[string]uint32),
 		def_check:    make(map[uint32]bool),
 		charmap:      make(map[uint32]string),
-		inter_rep:    make(map[uint32][]Token),
+		inter_rep:    make(map[uint32][]token),
 		rev_name_map: make(map[uint32]string),
-		tokens:       []Token{},
+		tokens:       []token{},
 		errors:       []error{},
 		graph:        newSyntaxGraph(),
 	}
@@ -46,13 +46,13 @@ func (i *parser) get_func_ptr() uint32 {
 	i.func_ptr++
 	return i.func_ptr
 }
-func (i *parser) curr() Token {
+func (i *parser) curr() token {
 	return i.tokens[i.index]
 }
-func (i *parser) match(word TokenType, expec []TokenType) bool {
+func (i *parser) match(word tokenType, expec []tokenType) bool {
 	return slices.Contains(expec, word)
 }
-func (i *parser) expect(expected []TokenType, errmsg string) {
+func (i *parser) expect(expected []tokenType, errmsg string) {
 	if !i.match(i.curr().typ, expected) {
 		i.errors = append(i.errors, fmt.Errorf("%s", errmsg))
 	}
@@ -78,8 +78,8 @@ func (i *parser) parse_grammar() {
 func (i *parser) parse_subject() {
 	subject := i.curr()
 
-	i.expect([]TokenType{identifier}, "Expected Subject at start of statement")
-	i.expect([]TokenType{colon}, "Expected Colon after Subject")
+	i.expect([]tokenType{identifier}, "Expected Subject at start of statement")
+	i.expect([]tokenType{colon}, "Expected Colon after Subject")
 	id := i.get_index(subject.text)
 	if i.def_check[id] { //If map is already set to true
 		i.errors = append(i.errors, fmt.Errorf("Multiple definitions for %s", subject.text))
@@ -89,7 +89,7 @@ func (i *parser) parse_subject() {
 	startnode := i.graph.GetNode(uint32(start), start)
 	startnode.AddEdgeNext(&i.graph, i.graph.GetNode(id, header), 1)
 	//Send here only if current is col else crash code
-	if i.match(i.tokens[i.index-1].typ, []TokenType{colon}) {
+	if i.match(i.tokens[i.index-1].typ, []tokenType{colon}) {
 		i.parse_rules(id, false)
 	} else {
 		return
