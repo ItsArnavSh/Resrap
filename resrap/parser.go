@@ -72,29 +72,33 @@ func (i *parser) get_index(name string) uint32 {
 }
 func (i *parser) parse_grammar() {
 	for i.index < len(i.tokens) {
-		fmt.Println(i.index, " vs ", len(i.tokens))
 		i.parse_subject()
 	}
 }
 func (i *parser) parse_subject() {
 	subject := i.curr()
+
 	i.expect([]TokenType{identifier}, "Expected Subject at start of statement")
 	i.expect([]TokenType{colon}, "Expected Colon after Subject")
 	id := i.get_index(subject.text)
-	i.def_check[id] = true
 	if i.def_check[id] { //If map is already set to true
 		i.errors = append(i.errors, fmt.Errorf("Multiple definitions for %s", subject.text))
 	}
+
+	i.def_check[id] = true
 	startnode := i.graph.GetNode(uint32(start), start)
 	startnode.AddEdgeNext(&i.graph, i.graph.GetNode(id, header), 1)
-	i.parse_rules(id, false)
+	//Send here only if current is col else crash code
+	if i.match(i.tokens[i.index-1].typ, []TokenType{colon}) {
+		i.parse_rules(id, false)
+	} else {
+		return
+	}
 
 }
 
 func (i *parser) parse_rules(root uint32, isDeep bool) (*syntaxNode, *syntaxNode) {
 
-	i.index--
-	i.expect([]TokenType{identifier, bracopen}, "Expected Identifier or brac")
 	rootnode := i.graph.GetNode(root, idk)
 	bufferNode := rootnode
 	endNode := i.graph.GetNode(uint32(end), end)
@@ -103,7 +107,6 @@ func (i *parser) parse_rules(root uint32, isDeep bool) (*syntaxNode, *syntaxNode
 		endNode = i.graph.GetNode(i.get_func_ptr(), end)
 	}
 	for {
-		fmt.Println("Currently parsing: ", i.curr().typ)
 		switch i.curr().typ {
 		case identifier:
 			//Means its a reference to a different Subject(presumably)
@@ -115,7 +118,6 @@ func (i *parser) parse_rules(root uint32, isDeep bool) (*syntaxNode, *syntaxNode
 			node.AddEdgeNext(&i.graph, jumpNode, 1)
 			startBuffer = bufferNode
 			bufferNode = jumpNode
-			fmt.Println(*bufferNode)
 			//Basically just add the word and next to it its jump node
 			// So when generating, the control will pass to the node at the location and save the exit in a stack
 			// Then when it reached its local collapse node, then the control will automatically come back to default
@@ -133,7 +135,9 @@ func (i *parser) parse_rules(root uint32, isDeep bool) (*syntaxNode, *syntaxNode
 			leafnode.AddEdgeNext(&i.graph, jumpNode, 1)
 			startBuffer = bufferNode
 			bufferNode = jumpNode
-
+		case colon:
+			//Colon is not allowed here
+			return nil, nil
 		case maybe:
 			startBuffer.AddEdgeNext(&i.graph, bufferNode, 1-i.get_probability()) //An option to skip to the end
 		case oneormore:

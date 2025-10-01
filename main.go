@@ -8,12 +8,12 @@ import (
 
 func main() {
 	r := resrap.NewResrap()
-	err := r.ParseGrammarFile("C", "example/Infinity.g4")
+	err := r.ParseGrammarFile("C", "example/C.g4")
 	if err != nil {
 		fmt.Println(err)
+		return
 	}
-
-	code := r.GenerateRandom("C", "program", 1000)
-
+	code := r.GenerateRandom("C", "program", 100)
 	fmt.Println(code)
+
 }

@@ -1,7 +1,5 @@
 package resrap
 
-import "fmt"
-
 // Resrap is the main object of the library.
 // It allows managing multiple language grammars and generating content from them.
 type Resrap struct {
@@ -36,7 +34,6 @@ func (r *Resrap) ParseGrammarFile(name, location string) error {
 	r.languageGraph[name] = lang
 	r.languageGraph[name].graph.Normalize()
 
-	fmt.Println(r.languageGraph[name].graph.PrintDOT())
 	return err
 }
 

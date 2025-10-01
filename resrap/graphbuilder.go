@@ -93,9 +93,7 @@ func (g *graphbuilder) start_generation(grammar string) error {
 }
 func (g *graphbuilder) generate_graph() error {
 	tokens, scanErrs := extracttokens(g.grammar)
-	for _, token := range tokens {
-		fmt.Println(token.typ.String())
-	}
+
 	if len(scanErrs) != 0 {
 		var all []error
 		for _, err := range scanErrs {
