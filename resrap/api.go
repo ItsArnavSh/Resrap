@@ -1,5 +1,7 @@
 package resrap
 
+import "fmt"
+
 // Resrap is the main object of the library.
 // It allows managing multiple language grammars and generating content from them.
 type Resrap struct {
@@ -17,21 +19,25 @@ func NewResrap() *Resrap {
 // ParseGrammar parses a grammar string and stores it under the given name.
 // name: a unique identifier for this grammar (e.g., "C").
 // grammar: the grammar definition as a string.
-func (r *Resrap) ParseGrammar(name, grammar string) {
+func (r *Resrap) ParseGrammar(name, grammar string) error {
 	lang := newLang()
-	lang.ParserString(grammar)
+	err := lang.ParserString(grammar)
 	r.languageGraph[name] = lang
 	r.languageGraph[name].graph.Normalize()
+	return err
 }
 
 // ParseGrammarFile parses a grammar from a file and stores it under the given name.
 // name: a unique identifier for this grammar (e.g., "C").
 // location: path to the grammar file.
-func (r *Resrap) ParseGrammarFile(name, location string) {
+func (r *Resrap) ParseGrammarFile(name, location string) error {
 	lang := newLang()
-	lang.ParserFile(location)
+	err := lang.ParserFile(location)
 	r.languageGraph[name] = lang
 	r.languageGraph[name].graph.Normalize()
+
+	fmt.Println(r.languageGraph[name].graph.PrintDOT())
+	return err
 }
 
 // GenerateRandom generates content from the grammar identified by 'name'.
