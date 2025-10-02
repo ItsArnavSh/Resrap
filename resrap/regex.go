@@ -19,7 +19,7 @@ type cacheRexState struct {
 }
 
 func (r *regexer) GenerateString(regex string, prn *prng) string {
-	size := prn.RandomInt(3, 7) // generate a size between 3 and 7
+	size := prn.RandomInt(3, 4) // generate a size between 3 and 7
 	var sb strings.Builder
 
 	for i := 0; i < size; i++ {
