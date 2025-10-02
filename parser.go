@@ -54,11 +54,14 @@ func (i *parser) curr() token {
 func (i *parser) match(word tokenType, expec []tokenType) bool {
 	return slices.Contains(expec, word)
 }
-func (i *parser) expect(expected []tokenType, errmsg string) {
+func (i *parser) expect(expected []tokenType, errmsg string) bool {
 	if !i.match(i.curr().typ, expected) {
 		i.errors = append(i.errors, fmt.Errorf("%s", errmsg))
+		i.index++
+		return true
 	}
 	i.index++
+	return false
 
 }
 func (i *parser) get_index(name string) uint32 {
@@ -75,13 +78,20 @@ func (i *parser) get_index(name string) uint32 {
 func (i *parser) parse_grammar() {
 	for i.index < len(i.tokens) {
 		i.parse_subject()
+		if len(i.errors) > 0 {
+			return //Crash on errors for now
+		}
 	}
 }
 func (i *parser) parse_subject() {
 	subject := i.curr()
 
-	i.expect([]tokenType{identifier}, "Expected Subject at start of statement")
-	i.expect([]tokenType{colon}, "Expected Colon after Subject")
+	if i.expect([]tokenType{identifier}, "Expected Subject at start of statement") {
+		return
+	}
+	if i.expect([]tokenType{colon}, "Expected Colon after Subject") {
+		return
+	}
 	id := i.get_index(subject.text)
 	if i.def_check[id] { //If map is already set to true
 		i.errors = append(i.errors, fmt.Errorf("Multiple definitions for %s", subject.text))
@@ -140,6 +150,7 @@ func (i *parser) parse_rules(root uint32, isDeep bool) (*syntaxNode, *syntaxNode
 			bufferNode = jumpNode
 		case colon:
 			//Colon is not allowed here
+			i.errors = append(i.errors, fmt.Errorf("Missing Semicolon"))
 			return nil, nil
 		case maybe:
 			startBuffer.AddEdgeNext(&i.graph, bufferNode, 1-i.get_probability()) //An option to skip to the end
@@ -198,6 +209,9 @@ func (i *parser) get_probability() float32 {
 	return 0.5
 }
 func (p *parser) ValidateGraph() []error {
+	if len(p.errors) > 0 {
+		return nil
+	}
 	var errors []error
 	for key, val := range p.def_check {
 		if !val {

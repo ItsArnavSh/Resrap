@@ -1,10 +1,10 @@
 
 
 program
-    : statement^ ;
+    : statement^;
 
 statement
-    : selectstmt ';\n'
+    : selectstmt ;'\n'
     | createtablestmt ';\n'
     | insertstmt ';\n' ;
 
