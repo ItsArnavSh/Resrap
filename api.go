@@ -1,5 +1,7 @@
 package resrap
 
+import "os"
+
 // Resrap is the main accesspoint for singlethreaded uses
 // Pretty Much Collection of graphs which can be generated using parsing grammar
 type Resrap struct {
@@ -54,4 +56,26 @@ func (r *Resrap) GenerateRandom(name, starting_node string, tokens int) string {
 func (r *Resrap) GenerateWithSeeded(name, starting_node string, seed uint64, tokens int) string {
 	prng := newPRNG(seed)
 	return r.languageGraph[name].graph.GraphWalk(&prng, starting_node, tokens)
+}
+
+// GenerateCodebase takes a config like one below  and generates a complete codebase
+// src/ # src is the root folder, with code and more inside of it
+//
+//	code/
+//	  c[10x20 code_*.c] #Generate 10 c files named code_[sth_unique].c each 20 tokens long in src/code
+//	  core/
+//	    c[5x1000 *.c]
+//	more/
+//	  sql[10x100 *.sql]
+func (r *Resrap) GenerateCodebase(config_loc, target string) error {
+	config, err := os.ReadFile(config_loc)
+	if err != nil {
+		return err
+	}
+	parent, err := ParseDSL(string(config))
+	if err != nil {
+		return err
+	}
+	parent.generate_node(r, target)
+	return nil
 }
