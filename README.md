@@ -1,6 +1,7 @@
 # Resrap
-[![Landing](https://img.shields.io/badge/docs-resrap.osdc.dev-blue)](https://resrap.osdc.dev)
-[![Go Reference](https://pkg.go.dev/badge/github.com/osdc/resrap.svg)](https://pkg.go.dev/github.com/osdc/resrap)
+[![Landing](https://img.shields.io/badge/docs-resrap.osdc.dev-white?logo=readthedocs&logoColor=black)](https://resrap.osdc.dev)
+[![Go Reference](https://img.shields.io/badge/go.dev-reference-00ADD8?logo=go&logoColor=white)](https://pkg.go.dev/github.com/osdc/resrap)
+[![Rust Docs](https://img.shields.io/badge/docs.rs-resrap--rs-orange?logo=rust&logoColor=white)](https://docs.rs/resrap-rs/latest/resrap_rs/struct.Resrap.html)
 
 *Just a parser… in reverse.*
 
@@ -136,3 +137,7 @@ Resrap was created to:
 * Compatible with standard EBNF operators: `+`, `*`, `?`, `()`
 
 See [docs/ABNF.md](docs/ABNF.md) for full syntax and examples.
+
+## Ports in other languages
+
+- Beta version of Rust port with a basic implementation can be found at docs.rs/resrap-rs
